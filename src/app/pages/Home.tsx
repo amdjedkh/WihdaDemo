@@ -7,7 +7,7 @@ import BottomNav from '../components/BottomNav';
 import PageTransition from '../components/PageTransition';
 import PullToRefresh from '../components/PullToRefresh';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import babyClothesImg from 'figma:asset/6ca96903cfde7315c572f9598645ca9fc8a8e6ca.png';
+import babyClothesImg from '../../assets/6ca96903cfde7315c572f9598645ca9fc8a8e6ca.png';
 import {
   Utensils,
   Package,

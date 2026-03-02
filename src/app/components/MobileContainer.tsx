@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import NetworkStatus from './NetworkStatus';
-import wihdaBg from 'figma:asset/a5d87b68b83915f49c77ce9c95107f47b6de71d1.png';
+import wihdaBg from '../../assets/a5d87b68b83915f49c77ce9c95107f47b6de71d1.png';
 
 interface MobileContainerProps {
   children: ReactNode;

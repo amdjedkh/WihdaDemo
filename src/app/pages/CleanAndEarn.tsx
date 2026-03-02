@@ -1,4 +1,4 @@
-import image_68006784dd90767bc6dc432709cdab530114952c from 'figma:asset/68006784dd90767bc6dc432709cdab530114952c.png'
+import image_68006784dd90767bc6dc432709cdab530114952c from '../../assets/68006784dd90767bc6dc432709cdab530114952c.png'
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';

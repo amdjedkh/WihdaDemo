@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import imgWihdaTextLogo1 from "figma:asset/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
+import imgWihdaTextLogo1 from "../../assets/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
 import { supabase } from '../lib/supabase';
 
 export default function SplashPage() {
