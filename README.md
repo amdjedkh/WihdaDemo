@@ -1,7 +1,7 @@
 
-  # Review design prompt
+  # Wihda Frontend
 
-  This is a code bundle for Review design prompt. The original project is available at https://www.figma.com/design/gzS1wuMaATzdaJNpsxPPkX/Review-design-prompt.
+  This is a code bundle for Wihda Frontend. The original project is available at https://www.figma.com/design/gzS1wuMaATzdaJNpsxPPkX/Wihda-Frontend.
 
   ## Running the code
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
-import imgWihdaTextLogo1 from "../../assets/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
+import imgWihdaTextLogo1 from "figma:asset/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
