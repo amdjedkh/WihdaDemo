@@ -1,52 +1,96 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { supabase, apiFetch } from '../lib/supabase';
-import type { Session, User } from '@supabase/supabase-js';
+import {
+  apiFetch,
+  getStoredToken,
+  setTokens,
+  setRestrictedToken,
+  clearTokens,
+  ApiError,
+} from '../lib/api';
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 export interface UserProfile {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   bio: string;
   location: string;
+  neighborhood: { id: string; name: string; city: string } | null;
   photoUrl: string;
   coins: number;
-  itemsShared: number;
-  activitiesJoined: number;
-  volunteerHours: number;
+  role: string;
+  verificationStatus: string;
   createdAt: string;
 }
 
-interface AuthContextType {
-  session: Session | null;
-  user: User | null;
+export interface AuthContextType {
+  user: UserProfile | null;
   profile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
-  signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signOut: () => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<{
+    error?: string;
+    verificationSessionId?: string;
+    restrictedToken?: string;
+    contactChannel?: string;
+  }>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{
+    error?: string;
+    code?: string;
+    restrictedToken?: string;
+    contactChannel?: string;
+  }>;
+  signOut: () => void;
   refreshProfile: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error?: string }>;
+  updateProfile: (updates: { name?: string; language?: string }) => Promise<{ error?: string }>;
 }
+
+// ─── Context ───────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// ─── Provider ──────────────────────────────────────────────────────────────────
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (accessToken: string) => {
+  const fetchProfile = useCallback(async () => {
     try {
-      const data = await apiFetch('/profile', {
-        headers: { 'x-user-token': accessToken },
-      });
-      setProfile(data.profile);
-    } catch (err: any) {
-      // 401 is expected when not logged in or token expired — not a real error
-      const msg = err?.message || '';
-      if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('Invalid JWT')) {
-        console.log('No valid session for profile fetch (expected when not logged in)');
+      const data = await apiFetch('/v1/me');
+      if (data.success && data.data) {
+        const d = data.data;
+        const p: UserProfile = {
+          id: d.id,
+          name: d.display_name,
+          email: d.email ?? null,
+          phone: d.phone ?? null,
+          bio: '',
+          location: d.neighborhood
+            ? `${d.neighborhood.name}, ${d.neighborhood.city}`
+            : '',
+          neighborhood: d.neighborhood ?? null,
+          photoUrl: '',
+          coins: d.coin_balance ?? 0,
+          role: d.role,
+          verificationStatus: d.verification_status,
+          createdAt: d.created_at,
+        };
+        setUser(p);
+        setProfile(p);
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setUser(null);
         setProfile(null);
       } else {
         console.error('Error fetching profile:', err);
@@ -54,100 +98,137 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Rehydrate session on load
   useEffect(() => {
-    let cancelled = false;
-
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (cancelled) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.access_token && s?.user) {
-        fetchProfile(s.access_token).finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      if (cancelled) return;
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.access_token && s?.user) {
-        fetchProfile(s.access_token);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+    const token = getStoredToken();
+    if (token) {
+      fetchProfile().finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, [fetchProfile]);
+
+  // ─── signUp ──────────────────────────────────────────────────────────────────
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const data = await apiFetch('/signup', {
+      const data = await apiFetch('/v1/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, display_name: name }),
       });
-      if (data.error) return { error: data.error };
-      
-      // Sign in after signup
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) return { error: signInErr.message };
-      return {};
-    } catch (err: any) {
-      return { error: err.message || 'Signup failed' };
+
+      if (data.success) {
+        const { restricted_token, verification_session_id, contact_channel } = data.data;
+        // Store restricted token so OTP routes can use it
+        setRestrictedToken(restricted_token);
+        return {
+          verificationSessionId: verification_session_id,
+          restrictedToken: restricted_token,
+          contactChannel: contact_channel,
+        };
+      }
+      return { error: 'Signup failed' };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        return { error: err.message };
+      }
+      return { error: 'Signup failed' };
     }
   };
+
+  // ─── signIn ──────────────────────────────────────────────────────────────────
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: error.message };
-      if (data.session?.access_token) {
-        await fetchProfile(data.session.access_token);
+      const data = await apiFetch('/v1/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (data.success) {
+        const { access_token, refresh_token } = data.data;
+        setTokens(access_token, refresh_token);
+        await fetchProfile();
+        return {};
       }
-      return {};
-    } catch (err: any) {
-      return { error: err.message || 'Sign in failed' };
+      return { error: 'Login failed' };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const errData = err.data as any;
+        const details = errData?.error?.details ?? {};
+
+        if (err.code === 'CONTACT_VERIFICATION_REQUIRED') {
+          // Store the restricted token so the OTP page can send/confirm
+          if (details.restricted_token) {
+            setRestrictedToken(details.restricted_token);
+          }
+          return {
+            error: 'Please verify your contact before logging in.',
+            code: 'CONTACT_VERIFICATION_REQUIRED',
+            restrictedToken: details.restricted_token,
+            contactChannel: details.contact_channel,
+          };
+        }
+
+        return { error: err.message };
+      }
+      return { error: 'Sign in failed' };
     }
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setSession(null);
+  // ─── signOut ─────────────────────────────────────────────────────────────────
+
+  const signOut = () => {
+    clearTokens();
     setUser(null);
+    setProfile(null);
   };
+
+  // ─── refreshProfile ──────────────────────────────────────────────────────────
 
   const refreshProfile = async () => {
-    if (session?.access_token) {
-      await fetchProfile(session.access_token);
+    if (getStoredToken()) {
+      await fetchProfile();
     }
   };
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  // ─── updateProfile ───────────────────────────────────────────────────────────
+
+  const updateProfile = async (updates: { name?: string; language?: string }) => {
     try {
-      const data = await apiFetch('/profile', {
-        method: 'PUT',
-        body: JSON.stringify(updates),
+      const body: Record<string, string> = {};
+      if (updates.name) body.display_name = updates.name;
+      if (updates.language) body.language_preference = updates.language;
+
+      const data = await apiFetch('/v1/me', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
       });
-      if (data.profile) setProfile(data.profile);
-      return {};
-    } catch (err: any) {
-      return { error: err.message || 'Update failed' };
+
+      if (data.success) {
+        await fetchProfile();
+        return {};
+      }
+      return { error: 'Update failed' };
+    } catch (err) {
+      if (err instanceof ApiError) return { error: err.message };
+      return { error: 'Update failed' };
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      session, user, profile, loading,
-      signUp, signIn, signOut, refreshProfile, updateProfile,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        refreshProfile,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

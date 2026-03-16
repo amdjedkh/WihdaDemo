@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import BottomNav from '../components/BottomNav';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import PageTransition from '../components/PageTransition';
+import { apiFetch } from '../lib/api';
 import {
   ArrowLeft,
   Search,
@@ -16,96 +17,61 @@ import {
   Sparkles,
   ChevronRight,
   MoreVertical,
+  Loader2,
 } from 'lucide-react';
 
-const mockActivities = [
-  {
-    id: 1,
-    organizationName: 'Croissant Rouge Algerien',
-    title: 'Join the Red Cross First Aid Training',
-    date: '21 May 2025',
-    dateShort: { day: '21', month: 'May' },
-    postedDate: '12 April 2025',
-    image: 'https://images.unsplash.com/photo-1605714007165-c15eac9c647b?w=600&h=400&fit=crop',
-    likes: 124,
-    comments: 9,
-    coinReward: 300,
-    deadline: 'Deadline 21 May 2025',
-    joined: false,
-  },
-  {
-    id: 2,
-    organizationName: 'Green Earth Algeria',
-    title: 'Community Park Cleanup Day',
-    date: '8 Mar 2025',
-    dateShort: { day: '08', month: 'Mar' },
-    postedDate: '20 Feb 2025',
-    image: 'https://images.unsplash.com/photo-1612159788732-e189a4dd2284?w=600&h=400&fit=crop',
-    likes: 89,
-    comments: 15,
-    coinReward: 200,
-    deadline: 'Deadline 8 Mar 2025',
-    joined: true,
-  },
-  {
-    id: 3,
-    organizationName: 'Aljazair Alkhadra',
-    title: 'Tree Planting Day – 500 Trees for Algiers',
-    date: '15 Apr 2025',
-    dateShort: { day: '15', month: 'Apr' },
-    postedDate: '1 Mar 2025',
-    image: 'https://images.unsplash.com/photo-1758599668356-c8c919e24dda?w=600&h=400&fit=crop',
-    likes: 210,
-    comments: 32,
-    coinReward: 250,
-    deadline: 'Deadline 15 Apr 2025',
-    joined: false,
-    emoji: '🌳',
-    emojiBg: 'bg-green-50',
-  },
-  {
-    id: 4,
-    organizationName: 'First Governorate',
-    title: 'Ramadan Food Distribution Drive',
-    date: '5 Mar 2025',
-    dateShort: { day: '05', month: 'Mar' },
-    postedDate: '18 Feb 2025',
-    image: 'https://images.unsplash.com/photo-1710092784814-4a6f158913b8?w=600&h=400&fit=crop',
-    likes: 156,
-    comments: 21,
-    coinReward: 180,
-    deadline: 'Deadline 5 Mar 2025',
-    joined: false,
-    emoji: '🏛️',
-    emojiBg: 'bg-blue-50',
-  },
-];
-
-const newsItems = [
-  {
-    id: 1,
-    title: 'New Recycling Center Opens in Downtown',
-    excerpt: 'A state-of-the-art recycling center has opened its doors to the community...',
-    date: 'Feb 25, 2026',
-  },
-  {
-    id: 2,
-    title: 'Neighborhood Watch Program Success',
-    excerpt: 'Crime rates dropped 30% since the neighborhood watch was established...',
-    date: 'Feb 22, 2026',
-  },
-  {
-    id: 3,
-    title: 'Community Garden Project Launch',
-    excerpt: 'Join the new community garden initiative starting next month...',
-    date: 'Feb 20, 2026',
-  },
-];
+interface Campaign {
+  id: string;
+  title: string;
+  description: string;
+  organization_name: string;
+  event_date: string;
+  image_url: string | null;
+  coin_reward: number;
+  participant_count: number;
+  created_at: string;
+}
 
 export default function Activities() {
   const [activeTab, setActiveTab] = useState<'activities' | 'news'>('activities');
   const [searchQuery, setSearchQuery] = useState('');
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeTab === 'activities') {
+      loadCampaigns();
+    }
+  }, [activeTab]);
+
+  const loadCampaigns = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch('/v1/campaigns');
+      if (data.success) {
+        setCampaigns(data.data.campaigns || []);
+      }
+    } catch (err) {
+      console.error('Failed to load campaigns:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = campaigns.filter(c =>
+    c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.organization_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return {
+      full: d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
+      day: d.getDate().toString().padStart(2, '0'),
+      month: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+    };
+  };
 
   return (
     <MobileContainer>
@@ -118,7 +84,7 @@ export default function Activities() {
               <ArrowLeft className="size-6" />
             </button>
             <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">Activities</h1>
-            <button className="relative" aria-label="Notifications">
+            <button onClick={() => navigate('/notifications')} className="relative" aria-label="Notifications">
               <Bell className="size-5 text-gray-800" />
               <div className="absolute -top-0.5 -right-0.5 size-2 bg-red-500 rounded-full" />
             </button>
@@ -175,91 +141,110 @@ export default function Activities() {
                 </div>
                 <div className="flex-1">
                   <p className="text-white text-[14px] font-semibold">Clean & Earn Coins</p>
-                  <p className="text-white/70 text-[11px]">Earn up to 200 coins per cleanup</p>
+                  <p className="text-white/70 text-[11px]">Earn up to 150 coins per verified cleanup</p>
                 </div>
                 <ChevronRight className="size-5 text-white/60" />
               </button>
 
-              {/* Activity Cards */}
-              {mockActivities.map((activity) => (
-                <div key={activity.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-4 shadow-sm">
-                  {/* Org Header */}
-                  <div className="flex items-center gap-3 p-4 pb-2">
-                    <div className={`size-10 rounded-full ${(activity as any).emojiBg || (activity.id === 1 ? 'bg-red-50' : 'bg-green-50')} flex items-center justify-center text-[16px]`}>
-                      {(activity as any).emoji || (activity.id === 1 ? '🏥' : '🌿')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-800 truncate">{activity.organizationName}</p>
-                      <p className="text-[11px] text-gray-400">{activity.postedDate}</p>
-                    </div>
-                    <button className="text-gray-400">
-                      <MoreVertical className="size-4" />
-                    </button>
-                  </div>
-
-                  {/* Image */}
-                  <div className="relative mx-4 rounded-xl overflow-hidden">
-                    <ImageWithFallback
-                      src={activity.image}
-                      alt={activity.title}
-                      className="w-full h-[160px] object-cover"
-                    />
-                    <div className="absolute top-3 left-3 bg-white rounded-lg px-2.5 py-1.5 shadow-sm">
-                      <p className="text-[16px] font-bold text-gray-800 leading-tight">{activity.dateShort.day}</p>
-                      <p className="text-[10px] font-semibold text-red-500">{activity.dateShort.month}</p>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-4 pt-3">
-                    <h3 className="text-[15px] font-semibold text-gray-800 mb-1">{activity.title}</h3>
-                    <p className="text-[11px] text-gray-400 mb-3">{activity.deadline}</p>
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <button className={`px-4 py-2 rounded-full text-[12px] font-semibold transition-all active:scale-95 ${
-                        activity.joined
-                          ? 'bg-gray-100 text-gray-600'
-                          : 'bg-[#14ae5c] text-white'
-                      }`}>
-                        {activity.joined ? 'Joined' : 'Join Activity'}
-                      </button>
-                      <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
-                        <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-                          <span className="text-[7px] font-bold">$</span>
-                        </div>
-                        {activity.coinReward}
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-50 pt-3 flex items-center gap-4">
-                      <button className="flex items-center gap-1.5 text-gray-400">
-                        <Heart className="size-4" />
-                        <span className="text-[12px]">{activity.likes}</span>
-                      </button>
-                      <button className="flex items-center gap-1.5 text-gray-400">
-                        <MessageCircle className="size-4" />
-                        <span className="text-[12px]">{activity.comments}</span>
-                      </button>
-                      <button className="ml-auto text-gray-400">
-                        <Share2 className="size-4" />
-                      </button>
-                    </div>
-                  </div>
+              {loading ? (
+                <div className="flex flex-col items-center py-12">
+                  <Loader2 className="size-8 text-[#14ae5c] animate-spin mb-2" />
+                  <p className="text-gray-400 text-[13px]">Loading activities...</p>
                 </div>
-              ))}
+              ) : filtered.length > 0 ? (
+                <div>
+                  {filtered.map((campaign) => {
+                    const dateInfo = formatDate(campaign.event_date);
+                    return (
+                      <div key={campaign.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-4 shadow-sm">
+                        {/* Org Header */}
+                        <div className="flex items-center gap-3 p-4 pb-2">
+                          <div className="size-10 rounded-full bg-green-50 flex items-center justify-center text-[16px]">
+                            🌿
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-semibold text-gray-800 truncate">
+                              {campaign.organization_name || 'Community'}
+                            </p>
+                            <p className="text-[11px] text-gray-400">
+                              {new Date(campaign.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button className="text-gray-400">
+                            <MoreVertical className="size-4" />
+                          </button>
+                        </div>
+
+                        {/* Image */}
+                        <div className="relative mx-4 rounded-xl overflow-hidden">
+                          {campaign.image_url ? (
+                            <ImageWithFallback
+                              src={campaign.image_url}
+                              alt={campaign.title}
+                              className="w-full h-[160px] object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-[160px] bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                              <Sparkles className="size-12 text-[#14ae5c]/40" />
+                            </div>
+                          )}
+                          <div className="absolute top-3 left-3 bg-white rounded-lg px-2.5 py-1.5 shadow-sm">
+                            <p className="text-[16px] font-bold text-gray-800 leading-tight">{dateInfo.day}</p>
+                            <p className="text-[10px] font-semibold text-red-500">{dateInfo.month}</p>
+                          </div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="p-4 pt-3">
+                          <h3 className="text-[15px] font-semibold text-gray-800 mb-1">{campaign.title}</h3>
+                          {campaign.description && (
+                            <p className="text-[12px] text-gray-500 line-clamp-2 mb-2">{campaign.description}</p>
+                          )}
+                          <p className="text-[11px] text-gray-400 mb-3">
+                            Deadline: {dateInfo.full}
+                          </p>
+
+                          <div className="flex items-center gap-2 mb-3">
+                            <button className="px-4 py-2 rounded-full text-[12px] font-semibold bg-[#14ae5c] text-white active:scale-95 transition-all">
+                              Join Activity
+                            </button>
+                            {campaign.coin_reward > 0 && (
+                              <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
+                                <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
+                                  <span className="text-[7px] font-bold">$</span>
+                                </div>
+                                {campaign.coin_reward}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="border-t border-gray-50 pt-3 flex items-center gap-4">
+                            <div className="flex items-center gap-1.5 text-gray-400">
+                              <Users className="size-4" />
+                              <span className="text-[12px]">{campaign.participant_count || 0}</span>
+                            </div>
+                            <button className="ml-auto text-gray-400">
+                              <Share2 className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-12">
+                  <Sparkles className="size-10 text-gray-300 mb-2" />
+                  <p className="text-gray-400 text-[13px]">
+                    {searchQuery ? 'No activities found' : 'No activities yet in your neighborhood'}
+                  </p>
+                  <p className="text-gray-400 text-[11px] mt-1">Check back soon!</p>
+                </div>
+              )}
             </>
           ) : (
-            <div className="space-y-3">
-              {newsItems.map((news) => (
-                <div key={news.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-                  <p className="text-[10px] text-gray-400 mb-1">{news.date}</p>
-                  <h3 className="text-[14px] font-semibold text-gray-800 mb-1">{news.title}</h3>
-                  <p className="text-[12px] text-gray-500 line-clamp-2">{news.excerpt}</p>
-                  <button className="text-[#14ae5c] text-[12px] font-medium mt-2 flex items-center gap-0.5">
-                    Read more <ChevronRight className="size-3" />
-                  </button>
-                </div>
-              ))}
+            <div className="flex flex-col items-center py-12">
+              <p className="text-gray-400 text-[13px]">Community news coming soon</p>
             </div>
           )}
         </div>

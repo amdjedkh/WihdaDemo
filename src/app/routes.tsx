@@ -13,7 +13,19 @@ import ChooseLocation from "./pages/ChooseLocation";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import EditProfile from "./pages/EditProfile";
+import VerifyOTP from "./pages/VerifyOTP";
+import VerifyPending from "./pages/VerifyPending";
+import VerifyIdentity from "./pages/VerifyIdentity";
+import Notifications from "./pages/Notifications";
+import Leftovers from "./pages/Leftovers";
 import NotFound from "./pages/NotFound";
+import GoogleCallback from "./pages/GoogleCallback";
+import HelpCenter from "./pages/HelpCenter";
+import MyListings from "./pages/MyListings";
+import MyImpact from "./pages/MyImpact";
+import MyBadges from "./pages/MyBadges";
+import About from "./pages/About";
+import Terms from "./pages/Terms";
 
 let _router: ReturnType<typeof createBrowserRouter> | null = null;
 
@@ -35,6 +47,18 @@ export function getRouter() {
           {
             path: "signup",
             Component: Signup,
+          },
+          {
+            path: "verify-otp",
+            Component: VerifyOTP,
+          },
+          {
+            path: "verify-pending",
+            Component: VerifyPending,
+          },
+          {
+            path: "verify-identity",
+            Component: VerifyIdentity,
           },
           {
             path: "home",
@@ -61,6 +85,14 @@ export function getRouter() {
             Component: EditProfile,
           },
           {
+            path: "notifications",
+            Component: Notifications,
+          },
+          {
+            path: "leftovers",
+            Component: Leftovers,
+          },
+          {
             path: "category/:categoryId",
             Component: CategoryDetail,
           },
@@ -75,6 +107,34 @@ export function getRouter() {
           {
             path: "choose-location",
             Component: ChooseLocation,
+          },
+          {
+            path: "auth/google/callback",
+            Component: GoogleCallback,
+          },
+          {
+            path: "help-center",
+            Component: HelpCenter,
+          },
+          {
+            path: "my-listings",
+            Component: MyListings,
+          },
+          {
+            path: "my-impact",
+            Component: MyImpact,
+          },
+          {
+            path: "my-badges",
+            Component: MyBadges,
+          },
+          {
+            path: "about",
+            Component: About,
+          },
+          {
+            path: "terms",
+            Component: Terms,
           },
           {
             path: "*",

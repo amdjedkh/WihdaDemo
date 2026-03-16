@@ -1,10 +1,12 @@
 import image_68006784dd90767bc6dc432709cdab530114952c from 'figma:asset/68006784dd90767bc6dc432709cdab530114952c.png'
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import { toast } from 'sonner';
 import SwipeBack from '../components/SwipeBack';
+import { useAuth } from '../context/AuthContext';
+import { apiFetch, API_BASE, getStoredToken } from '../lib/api';
 import {
   ArrowLeft,
   Camera,
@@ -19,19 +21,27 @@ import {
   ArrowRight,
   Loader2,
   ImageIcon,
+  MapPin,
+  AlertCircle,
 } from 'lucide-react';
-import wihdaBg from 'figma:asset/a5d87b68b83915f49c77ce9c95107f47b6de71d1.png';
 
-type CleaningStep = 'intro' | 'upload-before' | 'timer' | 'upload-after' | 'validating' | 'approved' | 'rejected';
+type CleaningStep = 'intro' | 'upload-before' | 'timer' | 'upload-after' | 'validating' | 'approved' | 'rejected' | 'pending-review';
+
+const MIN_DELAY_MINUTES = 20;
 
 export default function CleanAndEarn() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState<CleaningStep>('intro');
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [beforeImage, setBeforeImage] = useState<string | null>(null);
   const [afterImage, setAfterImage] = useState<string | null>(null);
+  const [beforeUploadedAt, setBeforeUploadedAt] = useState<Date | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputBeforeRef = useRef<HTMLInputElement>(null);
   const fileInputAfterRef = useRef<HTMLInputElement>(null);
@@ -42,29 +52,80 @@ export default function CleanAndEarn() {
     };
   }, []);
 
-  const handleBeforeImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBeforeImage(reader.result as string);
-        setStep('timer');
-      };
-      reader.readAsDataURL(file);
+  // ─── Start submission ────────────────────────────────────────────────────────
+
+  const startSubmission = async () => {
+    if (!user) {
+      toast('Sign in required', { description: 'Please sign in to use Clean & Earn' });
+      navigate('/login');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      const data = await apiFetch('/v1/cleanify/start', { method: 'POST' });
+      if (data.success) {
+        setSubmissionId(data.data.id);
+        setStep('upload-before');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to start submission');
+      toast.error(err.message || 'Failed to start');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAfterImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ─── Upload before photo ─────────────────────────────────────────────────────
+
+  const handleBeforeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file || !submissionId) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // 1. Get presigned upload URL
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const presignedData = await apiFetch(`/v1/cleanify/${submissionId}/before/presigned-url`, {
+        method: 'POST',
+        body: JSON.stringify({ file_extension: ext }),
+      });
+
+      const { upload_url, file_key } = presignedData.data;
+
+      // 2. Upload file directly to R2
+      const uploadRes = await fetch(upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error('Failed to upload photo');
+
+      // 3. Confirm the upload
+      await apiFetch(`/v1/cleanify/${submissionId}/before/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ file_key }),
+      });
+
+      // Show preview
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAfterImage(reader.result as string);
-        validateCleaning();
-      };
+      reader.onloadend = () => setBeforeImage(reader.result as string);
       reader.readAsDataURL(file);
+
+      setBeforeUploadedAt(new Date());
+      setStep('timer');
+      toast('Before photo uploaded!', { description: `Wait ${MIN_DELAY_MINUTES} min before taking after photo` });
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload before photo');
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setLoading(false);
     }
   };
+
+  // ─── Timer controls ──────────────────────────────────────────────────────────
 
   const startTimer = () => {
     setIsTimerRunning(true);
@@ -79,23 +140,112 @@ export default function CleanAndEarn() {
     setStep('upload-after');
   };
 
-  const validateCleaning = () => {
-    setStep('validating');
-    setTimeout(() => {
-      const isApproved = Math.random() > 0.15;
-      if (isApproved) {
-        const coins = Math.floor(50 + (timeElapsed / 60) * 10);
-        setCoinsEarned(coins);
-        setStep('approved');
-        toast('Cleanup approved!', {
-          description: `You earned ${coins} coins!`,
-          duration: 3000,
-        });
-      } else {
-        setStep('rejected');
+  // ─── Upload after photo ──────────────────────────────────────────────────────
+
+  const handleAfterImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !submissionId) return;
+
+    // Client-side 20-min gate check (backend also enforces this)
+    if (beforeUploadedAt) {
+      const elapsed = Date.now() - beforeUploadedAt.getTime();
+      if (elapsed < MIN_DELAY_MINUTES * 60 * 1000) {
+        const remaining = Math.ceil((MIN_DELAY_MINUTES * 60 * 1000 - elapsed) / 60000);
+        toast.error(`Please wait ${remaining} more minute(s) before uploading the after photo`);
+        return;
       }
-    }, 2500);
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // 1. Get presigned URL
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const presignedData = await apiFetch(`/v1/cleanify/${submissionId}/after/presigned-url`, {
+        method: 'POST',
+        body: JSON.stringify({ file_extension: ext }),
+      });
+
+      const { upload_url, file_key } = presignedData.data;
+
+      // 2. Upload
+      const uploadRes = await fetch(upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error('Failed to upload photo');
+
+      // 3. Confirm — this queues AI review
+      await apiFetch(`/v1/cleanify/${submissionId}/after/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ file_key }),
+      });
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onloadend = () => setAfterImage(reader.result as string);
+      reader.readAsDataURL(file);
+
+      setStep('validating');
+      pollSubmissionStatus();
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload after photo');
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ─── Poll for AI review result ────────────────────────────────────────────────
+
+  const pollSubmissionStatus = useCallback(async () => {
+    if (!submissionId) return;
+
+    let attempts = 0;
+    const maxAttempts = 20; // poll for up to ~60 seconds
+
+    const poll = async () => {
+      try {
+        const data = await apiFetch(`/v1/cleanify/submissions/${submissionId}`);
+        if (!data.success) return;
+
+        const submission = data.data;
+        const status = submission.status;
+
+        if (status === 'approved') {
+          setCoinsEarned(submission.coins_awarded ?? 150);
+          setStep('approved');
+          toast('Approved!', { description: `You earned ${submission.coins_awarded ?? 150} coins!` });
+          return;
+        }
+        if (status === 'rejected') {
+          setStep('rejected');
+          return;
+        }
+        if (status === 'pending_review') {
+          // AI still processing; show pending state
+          setStep('pending-review');
+          return;
+        }
+
+        // Still validating — keep polling
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 3000);
+        } else {
+          setStep('pending-review');
+        }
+      } catch {
+        attempts++;
+        if (attempts < maxAttempts) setTimeout(poll, 5000);
+        else setStep('pending-review');
+      }
+    };
+
+    setTimeout(poll, 3000);
+  }, [submissionId]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -105,13 +255,21 @@ export default function CleanAndEarn() {
 
   const resetFlow = () => {
     setStep('intro');
+    setSubmissionId(null);
     setBeforeImage(null);
     setAfterImage(null);
+    setBeforeUploadedAt(null);
     setTimeElapsed(0);
     setIsTimerRunning(false);
     setCoinsEarned(0);
+    setError('');
     if (timerRef.current) clearInterval(timerRef.current);
   };
+
+  const minutesSinceBefore = beforeUploadedAt
+    ? Math.floor((Date.now() - beforeUploadedAt.getTime()) / 60000)
+    : 0;
+  const canUploadAfter = minutesSinceBefore >= MIN_DELAY_MINUTES;
 
   const stepNumber = step === 'intro' ? 0 : step === 'upload-before' ? 1 : step === 'timer' ? 2 : step === 'upload-after' ? 3 : 4;
 
@@ -145,7 +303,16 @@ export default function CleanAndEarn() {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 pb-8 relative">
-          {/* Intro */}
+
+          {/* Global error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+              <AlertCircle className="size-4 text-red-500 shrink-0" />
+              <p className="text-[13px] text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* ── Intro ── */}
           {step === 'intro' && (
             <div className="flex flex-col items-center pt-8">
               <div className="relative w-[calc(100%+2.5rem)] -mx-5 h-[200px] mb-6">
@@ -165,9 +332,9 @@ export default function CleanAndEarn() {
               <div className="w-full space-y-3 mb-8">
                 {[
                   { icon: Camera, text: 'Take a "before" photo of the dirty area', step: '1' },
-                  { icon: Clock, text: 'Start the timer and clean the area', step: '2' },
+                  { icon: Clock, text: `Wait at least ${MIN_DELAY_MINUTES} minutes while you clean`, step: '2' },
                   { icon: Upload, text: 'Take an "after" photo when done', step: '3' },
-                  { icon: Sparkles, text: 'Get your coins after AI validation', step: '4' },
+                  { icon: Sparkles, text: 'Get coins after AI validation (up to 48h)', step: '4' },
                 ].map((item) => (
                   <div key={item.step} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3.5">
                     <div className="bg-[#14ae5c] text-white rounded-full size-8 flex items-center justify-center text-[12px] font-bold shrink-0">
@@ -178,16 +345,32 @@ export default function CleanAndEarn() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setStep('upload-before')}
-                className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-              >
-                Let's Go <ArrowRight className="size-5" />
-              </button>
+              {!user ? (
+                <div className="w-full space-y-3">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center">
+                    <p className="text-[13px] text-yellow-800 font-medium">Sign in to participate</p>
+                    <p className="text-[12px] text-yellow-700 mt-0.5">You need an account to earn coins</p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                  >
+                    Sign In <ArrowRight className="size-5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={startSubmission}
+                  disabled={loading}
+                  className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {loading ? <Loader2 className="size-5 animate-spin" /> : <>Let's Go <ArrowRight className="size-5" /></>}
+                </button>
+              )}
             </div>
           )}
 
-          {/* Upload Before */}
+          {/* ── Upload Before ── */}
           {step === 'upload-before' && (
             <div className="flex flex-col items-center pt-6">
               <div className="bg-orange-50 rounded-2xl p-4 mb-4">
@@ -195,18 +378,25 @@ export default function CleanAndEarn() {
               </div>
               <h2 className="text-[20px] font-semibold text-gray-900 mb-1">Before Photo</h2>
               <p className="text-gray-500 text-[13px] text-center mb-6">
-                Upload a photo of the unclean area
+                Upload a photo of the unclean area to start
               </p>
 
               <button
                 onClick={() => fileInputBeforeRef.current?.click()}
-                className="w-full h-[280px] border-2 border-dashed border-[#14ae5c]/40 rounded-2xl flex flex-col items-center justify-center bg-green-50/30 active:bg-green-50 transition-colors"
+                disabled={loading}
+                className="w-full h-[280px] border-2 border-dashed border-[#14ae5c]/40 rounded-2xl flex flex-col items-center justify-center bg-green-50/30 active:bg-green-50 transition-colors disabled:opacity-60"
               >
-                <div className="bg-[#14ae5c]/10 rounded-full p-4 mb-3">
-                  <ImageIcon className="size-8 text-[#14ae5c]" />
-                </div>
-                <p className="text-[14px] font-medium text-[#14ae5c]">Tap to upload photo</p>
-                <p className="text-[12px] text-gray-400 mt-1">JPG, PNG or take a photo</p>
+                {loading ? (
+                  <Loader2 className="size-10 text-[#14ae5c] animate-spin" />
+                ) : (
+                  <>
+                    <div className="bg-[#14ae5c]/10 rounded-full p-4 mb-3">
+                      <ImageIcon className="size-8 text-[#14ae5c]" />
+                    </div>
+                    <p className="text-[14px] font-medium text-[#14ae5c]">Tap to upload photo</p>
+                    <p className="text-[12px] text-gray-400 mt-1">JPG, PNG, HEIC or take a photo</p>
+                  </>
+                )}
               </button>
 
               <input
@@ -220,19 +410,22 @@ export default function CleanAndEarn() {
             </div>
           )}
 
-          {/* Timer */}
+          {/* ── Timer ── */}
           {step === 'timer' && (
             <div className="flex flex-col items-center pt-6">
               <h2 className="text-[20px] font-semibold text-gray-900 mb-1">Clean the Area</h2>
-              <p className="text-gray-500 text-[13px] mb-6">
+              <p className="text-gray-500 text-[13px] mb-2">
                 {isTimerRunning ? 'Timer is running... Keep cleaning!' : 'Start the timer when ready'}
+              </p>
+              <p className="text-[12px] text-[#14ae5c] font-medium mb-4">
+                You must wait at least {MIN_DELAY_MINUTES} minutes before the after photo
               </p>
 
               {beforeImage && (
                 <div className="w-full rounded-2xl overflow-hidden mb-6 border border-gray-100">
                   <img src={beforeImage} alt="Before" className="w-full h-[160px] object-cover" />
                   <div className="bg-gray-50 px-3 py-1.5 text-[11px] text-gray-500 font-medium">
-                    Before Photo
+                    Before Photo ✓
                   </div>
                 </div>
               )}
@@ -272,7 +465,7 @@ export default function CleanAndEarn() {
             </div>
           )}
 
-          {/* Upload After */}
+          {/* ── Upload After ── */}
           {step === 'upload-after' && (
             <div className="flex flex-col items-center pt-6">
               <div className="bg-blue-50 rounded-2xl p-4 mb-4">
@@ -282,6 +475,16 @@ export default function CleanAndEarn() {
               <p className="text-gray-500 text-[13px] text-center mb-4">
                 Show us how clean it looks now!
               </p>
+
+              {/* Time check banner */}
+              {!canUploadAfter && beforeUploadedAt && (
+                <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 flex items-center gap-2">
+                  <Clock className="size-4 text-yellow-600 shrink-0" />
+                  <p className="text-[12px] text-yellow-700">
+                    Wait {MIN_DELAY_MINUTES - minutesSinceBefore} more minute(s) before uploading the after photo
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2 w-full mb-4">
                 {beforeImage && (
@@ -297,12 +500,21 @@ export default function CleanAndEarn() {
 
               <button
                 onClick={() => fileInputAfterRef.current?.click()}
-                className="w-full h-[200px] border-2 border-dashed border-[#14ae5c]/40 rounded-2xl flex flex-col items-center justify-center bg-green-50/30 active:bg-green-50 transition-colors"
+                disabled={loading || !canUploadAfter}
+                className="w-full h-[200px] border-2 border-dashed border-[#14ae5c]/40 rounded-2xl flex flex-col items-center justify-center bg-green-50/30 active:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="bg-[#14ae5c]/10 rounded-full p-4 mb-3">
-                  <ImageIcon className="size-8 text-[#14ae5c]" />
-                </div>
-                <p className="text-[14px] font-medium text-[#14ae5c]">Tap to upload after photo</p>
+                {loading ? (
+                  <Loader2 className="size-10 text-[#14ae5c] animate-spin" />
+                ) : (
+                  <>
+                    <div className="bg-[#14ae5c]/10 rounded-full p-4 mb-3">
+                      <ImageIcon className="size-8 text-[#14ae5c]" />
+                    </div>
+                    <p className="text-[14px] font-medium text-[#14ae5c]">
+                      {canUploadAfter ? 'Tap to upload after photo' : `Wait ${MIN_DELAY_MINUTES - minutesSinceBefore} min`}
+                    </p>
+                  </>
+                )}
               </button>
 
               <input
@@ -320,7 +532,7 @@ export default function CleanAndEarn() {
             </div>
           )}
 
-          {/* Validating */}
+          {/* ── Validating ── */}
           {step === 'validating' && (
             <div className="flex flex-col items-center justify-center pt-20">
               <div className="bg-green-50 rounded-3xl p-8 mb-6">
@@ -338,7 +550,32 @@ export default function CleanAndEarn() {
             </div>
           )}
 
-          {/* Approved */}
+          {/* ── Pending Review ── */}
+          {step === 'pending-review' && (
+            <div className="flex flex-col items-center pt-8">
+              <div className="bg-blue-50 rounded-3xl p-6 mb-4">
+                <Clock className="size-16 text-blue-500" />
+              </div>
+              <h2 className="text-[22px] font-semibold text-blue-600 mb-1">Under Review</h2>
+              <p className="text-gray-500 text-[14px] text-center mb-6 px-4">
+                Your submission is being reviewed by our moderators. You'll be notified within 24 hours.
+              </p>
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 w-full mb-6">
+                <p className="text-[13px] font-semibold text-blue-700 mb-1">What happens next?</p>
+                <p className="text-[12px] text-blue-600">
+                  Our team will review your before/after photos and award coins if the cleanup is verified.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/activities')}
+                className="w-full bg-[#14ae5c] text-white py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform"
+              >
+                Back to Activities
+              </button>
+            </div>
+          )}
+
+          {/* ── Approved ── */}
           {step === 'approved' && (
             <div className="flex flex-col items-center pt-8">
               <div className="bg-green-50 rounded-3xl p-6 mb-4">
@@ -389,7 +626,7 @@ export default function CleanAndEarn() {
             </div>
           )}
 
-          {/* Rejected */}
+          {/* ── Rejected ── */}
           {step === 'rejected' && (
             <div className="flex flex-col items-center pt-8">
               <div className="bg-red-50 rounded-3xl p-6 mb-4">

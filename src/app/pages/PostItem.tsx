@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import { useAuth } from '../context/AuthContext';
-import { apiUpload } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import {
   ArrowLeft,
   Camera,
@@ -24,6 +24,18 @@ const categoryTitles: Record<string, string> = {
   exchange: 'Exchange Item',
 };
 
+const foodTypes = [
+  { value: 'cooked_meal', label: 'Cooked Meal' },
+  { value: 'raw_ingredients', label: 'Raw Ingredients' },
+  { value: 'bread', label: 'Bread' },
+  { value: 'vegetables', label: 'Vegetables' },
+  { value: 'fruits', label: 'Fruits' },
+  { value: 'dairy', label: 'Dairy' },
+  { value: 'packaged', label: 'Packaged' },
+  { value: 'dry_goods', label: 'Dry Goods' },
+  { value: 'other', label: 'Other' },
+];
+
 const conditions = [
   { value: 'new', label: 'New' },
   { value: 'like-new', label: 'Like New' },
@@ -39,8 +51,10 @@ export default function PostItem() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [condition, setCondition] = useState('good');
-  const [quantity, setQuantity] = useState('1');
+  const [quantity, setQuantity] = useState(1);
   const [expiryDate, setExpiryDate] = useState('');
+  const [foodType, setFoodType] = useState('cooked_meal');
+  const [portions, setPortions] = useState(1);
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -64,7 +78,7 @@ export default function PostItem() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error('Please sign in to create a post');
       navigate('/login');
@@ -79,28 +93,45 @@ export default function PostItem() {
     setSubmitting(true);
 
     try {
-      const formData = new FormData();
-      formData.append('title', title.trim());
-      formData.append('description', description.trim());
-      formData.append('category', categoryId || 'leftovers');
-      formData.append('type', 'give');
-      formData.append('location', profile?.location || 'Hadjam Moukhtar');
-      formData.append('coins', '100');
+      if (isFood) {
+        // Leftovers: use the /v1/leftovers/offers endpoint
+        const body: any = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          survey: {
+            schema_version: 1,
+            food_type: foodType,
+            portions: portions,
+            pickup_time_preference: 'flexible',
+            distance_willing_km: 2,
+          },
+          quantity: quantity,
+        };
 
-      // Attach first image if available
-      if (imageFiles.length > 0) {
-        formData.append('photo', imageFiles[0]);
+        if (expiryDate) {
+          // Convert date to hours from now
+          const expiryMs = new Date(expiryDate).getTime() - Date.now();
+          const expiryHours = Math.max(1, Math.min(72, Math.round(expiryMs / 3600000)));
+          body.expiry_hours = expiryHours;
+        }
+
+        await apiFetch('/v1/leftovers/offers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+      } else {
+        // Other categories: not yet supported in backend
+        toast.error('This category is not yet available. Coming soon!');
+        setSubmitting(false);
+        return;
       }
 
-      await apiUpload('/posts', formData);
-
-      toast.success('Post created! You earned coins for sharing.', {
-        duration: 2000,
-      });
+      toast.success('Post created! You earned coins for sharing.', { duration: 2000 });
       setTimeout(() => navigate(`/category/${categoryId}`), 1500);
     } catch (err: any) {
       console.error('Post creation error:', err);
-      toast.error('Failed to create post. Please try again.');
+      toast.error(err?.message || 'Failed to create post. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -122,6 +153,17 @@ export default function PostItem() {
             <div className="size-6" />
           </div>
         </div>
+
+        {/* Not supported categories banner */}
+        {!isFood && (
+          <div className="mx-5 mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-3">
+            <span className="text-[20px]">🚧</span>
+            <div className="flex-1">
+              <p className="text-[13px] font-medium text-gray-800">Coming Soon</p>
+              <p className="text-[11px] text-gray-500">This category will be available in an upcoming update</p>
+            </div>
+          </div>
+        )}
 
         {/* Not logged in prompt */}
         {!user && (
@@ -194,19 +236,41 @@ export default function PostItem() {
 
             {/* Description */}
             <div>
-              <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Description *</label>
+              <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Provide details..."
-                required
                 rows={3}
                 className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[14px] placeholder:text-gray-400 border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors resize-none"
               />
             </div>
 
-            {/* Condition */}
-            {!isHelp && (
+            {/* Food Type (leftovers only) */}
+            {isFood && (
+              <div>
+                <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Food Type</label>
+                <div className="flex gap-2 flex-wrap">
+                  {foodTypes.map((ft) => (
+                    <button
+                      key={ft.value}
+                      type="button"
+                      onClick={() => setFoodType(ft.value)}
+                      className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                        foodType === ft.value
+                          ? 'bg-[#14ae5c] text-white'
+                          : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {ft.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Condition (non-help, non-food) */}
+            {!isHelp && !isFood && (
               <div>
                 <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Condition</label>
                 <div className="flex gap-2 flex-wrap">
@@ -228,19 +292,36 @@ export default function PostItem() {
               </div>
             )}
 
-            {/* Quantity */}
-            <div>
-              <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Quantity</label>
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                min="1"
-                className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[14px] border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors"
-              />
-            </div>
+            {/* Portions (food only) */}
+            {isFood && (
+              <div>
+                <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Portions</label>
+                <input
+                  type="number"
+                  value={portions}
+                  onChange={(e) => setPortions(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  max="50"
+                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[14px] border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                />
+              </div>
+            )}
 
-            {/* Expiry */}
+            {/* Quantity (non-food) */}
+            {!isFood && (
+              <div>
+                <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Quantity</label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[14px] border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                />
+              </div>
+            )}
+
+            {/* Expiry (food only) */}
             {isFood && (
               <div>
                 <label className="text-[13px] font-semibold text-gray-800 mb-1.5 block">Best Before</label>
@@ -260,7 +341,9 @@ export default function PostItem() {
               </div>
               <div>
                 <p className="text-[13px] font-medium text-gray-800">Pickup Location</p>
-                <p className="text-[11px] text-gray-400">{profile?.location || 'Hadjam Moukhtar'} Neighborhood</p>
+                <p className="text-[11px] text-gray-400">
+                  {profile?.neighborhood?.name || profile?.location || 'Your neighborhood'}
+                </p>
               </div>
             </div>
 
@@ -270,7 +353,7 @@ export default function PostItem() {
                 <span className="text-[11px] font-bold text-[#f0a326]">$</span>
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-gray-800">Earn up to 100 coins</p>
+                <p className="text-[13px] font-semibold text-gray-800">Earn up to 200 coins</p>
                 <p className="text-[11px] text-gray-500">When someone accepts your offer</p>
               </div>
             </div>
@@ -278,7 +361,7 @@ export default function PostItem() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={submitting || !user}
+              disabled={submitting || !user || !isFood}
               className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {submitting ? (

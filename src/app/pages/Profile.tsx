@@ -1,12 +1,12 @@
-import image_29f2e4e91e8e696361ddf7518d97e0f4bf57fb43 from 'figma:asset/29f2e4e91e8e696361ddf7518d97e0f4bf57fb43.png'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import BottomNav from '../components/BottomNav';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import PageTransition from '../components/PageTransition';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../lib/supabase';
+import { apiFetch, apiUpload, API_BASE } from '../lib/api';
+import { toast, Toaster } from 'sonner';
 import {
   ArrowLeft,
   Settings,
@@ -22,66 +22,94 @@ import {
   MapPin,
   LogOut,
   User,
-  Trash2,
+  Bell,
+  Camera,
+  Loader2,
 } from 'lucide-react';
 
-const badges = [
-  { id: 1, name: 'Food Saver', icon: '🍞', color: 'bg-orange-50', earned: true },
-  { id: 2, name: 'Active Member', icon: '⚡', color: 'bg-blue-50', earned: true },
-  { id: 3, name: 'Citizen of Month', icon: '🏆', color: 'bg-yellow-50', earned: true },
-  { id: 4, name: 'Local Giver', icon: '🤝', color: 'bg-green-50', earned: true },
-  { id: 5, name: 'Top Helper', icon: '💪', color: 'bg-purple-50', earned: false },
-  { id: 6, name: 'Eco Warrior', icon: '🌿', color: 'bg-emerald-50', earned: false },
-];
 
-interface UserPost {
+interface CoinEntry {
   id: string;
-  title: string;
-  description: string;
-  image: string;
+  amount: number;
   category: string;
-  coins: number;
-  createdAt: string;
+  description: string;
+  created_at: string;
 }
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { profile, user, signOut, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'activity' | 'posts'>('activity');
-  const [userPosts, setUserPosts] = useState<UserPost[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
+  const { profile, user, signOut, loading: authLoading, refreshProfile } = useAuth();
+  const [activeTab, setActiveTab] = useState<'activity' | 'coins'>('activity');
+  const [coinEntries, setCoinEntries] = useState<CoinEntry[]>([]);
+  const [loadingCoins, setLoadingCoins] = useState(false);
+  const [cleanifyCount, setCleanifyCount] = useState(0);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [userBadges, setUserBadges] = useState<any[]>([]);
+  const [loadingBadges, setLoadingBadges] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const isGuest = !user;
 
-  useEffect(() => {
-    if (user?.id && activeTab === 'posts') {
-      setLoadingPosts(true);
-      apiFetch(`/posts/user/${user.id}`)
-        .then(data => setUserPosts(data.posts || []))
-        .catch(err => console.error('Failed to load user posts:', err))
-        .finally(() => setLoadingPosts(false));
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      await apiUpload('/v1/me/photo', formData);
+      await refreshProfile();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      // Reset input so same file can be re-selected
+      if (photoInputRef.current) photoInputRef.current.value = '';
     }
-  }, [user?.id, activeTab]);
+  };
+
+  useEffect(() => {
+    if (user && activeTab === 'coins') {
+      setLoadingCoins(true);
+      apiFetch('/v1/me/coins')
+        .then(data => {
+          if (data.success) {
+            setCoinEntries(data.data.entries || []);
+          }
+        })
+        .catch(err => console.error('Failed to load coin history:', err))
+        .finally(() => setLoadingCoins(false));
+    }
+  }, [user, activeTab]);
+
+  useEffect(() => {
+    if (user) {
+      apiFetch('/v1/cleanify/stats')
+        .then(data => {
+          if (data.success) {
+            setCleanifyCount(data.data.user?.total_approved ?? 0);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      setLoadingBadges(true);
+      apiFetch('/v1/me/badges')
+        .then(data => {
+          if (data.success) setUserBadges(data.data.badges || []);
+        })
+        .catch(() => {})
+        .finally(() => setLoadingBadges(false));
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
-    await signOut();
+    signOut();
     navigate('/login');
   };
-
-  const handleDeletePost = async (postId: string) => {
-    try {
-      await apiFetch(`/posts/${postId}`, { method: 'DELETE' });
-      setUserPosts(prev => prev.filter(p => p.id !== postId));
-    } catch (err) {
-      console.error('Failed to delete post:', err);
-    }
-  };
-
-  const recentActivity = [
-    { id: 1, text: 'Shared fresh bread with neighbor', coins: 100, time: '2h ago', type: 'give' },
-    { id: 2, text: 'Joined Red Cross Training', coins: 300, time: '1d ago', type: 'activity' },
-    { id: 3, text: 'Clean & Earn - Park area', coins: 75, time: '3d ago', type: 'clean' },
-  ];
 
   const displayName = profile?.name || 'Guest User';
   const displayLocation = profile?.location || 'Set your location';
@@ -92,6 +120,7 @@ export default function Profile() {
   return (
     <MobileContainer>
       <PageTransition>
+      <Toaster position="top-center" />
       <div className="flex flex-col size-full bg-white">
         {/* Header */}
         <div className="px-5 pt-[env(safe-area-inset-top)]">
@@ -116,7 +145,7 @@ export default function Profile() {
         <div className="flex-1 overflow-y-auto pb-24">
           {/* Guest prompt */}
           {isGuest && (
-            <div className="mx-5 mb-4 bg-gradient-to-r from-[#14ae5c] to-emerald-600 rounded-2xl p-4">
+            <div className="mx-5 md:mx-8 mb-4 bg-gradient-to-r from-[#14ae5c] to-emerald-600 rounded-2xl p-4">
               <p className="text-white text-[15px] font-semibold mb-1">Join the community!</p>
               <p className="text-white/70 text-[12px] mb-3">Create an account to share items, earn coins, and connect with neighbors.</p>
               <div className="flex gap-2">
@@ -131,35 +160,48 @@ export default function Profile() {
           )}
 
           {/* Profile Card */}
-          <div className="px-5 pb-5">
+          <div className="px-5 md:px-8 pb-5">
             <div className="flex items-start gap-4">
-              <div className="relative">
+              <div className="relative" onClick={() => !isGuest && photoInputRef.current?.click()}>
                 {displayPhoto ? (
-                  <ImageWithFallback
-                    src={displayPhoto}
-                    alt="Profile"
-                    className="size-[68px] rounded-2xl object-cover"
-                  />
+                  <ImageWithFallback src={displayPhoto} alt="Profile" className="size-[68px] rounded-2xl object-cover" />
                 ) : (
                   <div className="size-[68px] rounded-2xl bg-gray-100 flex items-center justify-center">
                     <User className="size-8 text-gray-400" />
                   </div>
                 )}
                 {!isGuest && (
-                  <div className="absolute -bottom-1 -right-1 bg-[#14ae5c] rounded-full p-0.5">
-                    <BadgeCheck className="size-4 text-white" />
+                  <div className="absolute inset-0 rounded-2xl bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
+                    {uploadingPhoto ? <Loader2 className="size-5 text-white animate-spin" /> : <Camera className="size-5 text-white" />}
                   </div>
                 )}
+                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[18px] font-semibold text-gray-900">{displayName}</h2>
                   {!isGuest && <Crown className="size-4 text-[#f0a326]" />}
+                  {!isGuest && user?.verificationStatus !== 'verified' && (
+                    <button
+                      onClick={() => navigate('/verify-identity')}
+                      className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full font-medium"
+                    >
+                      Unverified
+                    </button>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <MapPin className="size-3 text-gray-400" />
-                  <p className="text-[12px] text-gray-500">{displayLocation}</p>
-                </div>
+                {profile?.neighborhood && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <MapPin className="size-3 text-gray-400" />
+                    <p className="text-[12px] text-gray-500">{profile.neighborhood.name}, {profile.neighborhood.city}</p>
+                  </div>
+                )}
+                {!profile?.neighborhood && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <MapPin className="size-3 text-gray-400" />
+                    <p className="text-[12px] text-gray-500">{displayLocation}</p>
+                  </div>
+                )}
                 <p className="text-[12px] text-gray-400 mt-2 leading-relaxed">
                   {displayBio}
                 </p>
@@ -167,26 +209,36 @@ export default function Profile() {
             </div>
 
             {!isGuest && (
-              <button
-                onClick={() => navigate('/edit-profile')}
-                className="mt-4 w-full bg-[#14ae5c] text-white py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              >
-                <Edit3 className="size-4" /> Edit Profile
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => navigate('/edit-profile')}
+                  className="flex-1 bg-[#14ae5c] text-white py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <Edit3 className="size-4" /> Edit Profile
+                </button>
+                {!profile?.neighborhood && (
+                  <button
+                    onClick={() => navigate('/choose-location')}
+                    className="flex-1 border border-[#14ae5c] text-[#14ae5c] py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                  >
+                    <MapPin className="size-4" /> Set Location
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
           {/* Stats */}
-          <div className="px-5 mb-5">
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard icon={Flame} label="Activities" value={String(profile?.activitiesJoined ?? 0)} color="text-orange-500" bg="bg-orange-50" />
-              <StatCard icon={Package} label="Items Shared" value={String(profile?.itemsShared ?? 0)} color="text-blue-500" bg="bg-blue-50" />
-              <StatCard icon={Clock} label="Volunteer" value={`${profile?.volunteerHours ?? 0}h`} color="text-purple-500" bg="bg-purple-50" />
+          <div className="px-5 md:px-8 mb-5">
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-3 md:gap-6">
+              <StatCard icon={Flame} label="Cleanify" value={String(cleanifyCount)} color="text-orange-500" bg="bg-orange-50" />
+              <StatCard icon={Package} label="Shared" value="0" color="text-blue-500" bg="bg-blue-50" />
+              <StatCard icon={Clock} label="Volunteer" value="0h" color="text-purple-500" bg="bg-purple-50" />
             </div>
           </div>
 
           {/* Coins Balance */}
-          <div className="px-5 mb-5">
+          <div className="px-5 md:px-8 mb-5">
             <div className="bg-gradient-to-r from-[#f0a326] to-[#e8932a] rounded-2xl p-4 flex items-center justify-between">
               <div>
                 <p className="text-white/80 text-[12px] font-medium">Total Balance</p>
@@ -200,28 +252,35 @@ export default function Profile() {
           </div>
 
           {/* Badges */}
-          <div className="px-5 mb-5">
+          <div className="px-5 md:px-8 mb-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[15px] font-semibold text-gray-800">Badges</h3>
-              <span className="text-[12px] text-gray-400">{badges.filter(b => b.earned).length}/{badges.length}</span>
+              <span className="text-[12px] text-gray-400">
+                {userBadges.filter(b => b.earned).length}/{userBadges.length}
+              </span>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {badges.map((badge) => (
-                <div
-                  key={badge.id}
-                  className={`${badge.color} rounded-2xl p-3 flex flex-col items-center gap-1.5 ${
-                    !badge.earned ? 'opacity-40' : ''
-                  }`}
-                >
-                  <span className="text-[24px]">{badge.icon}</span>
-                  <span className="text-[10px] font-medium text-gray-700 text-center leading-tight">{badge.name}</span>
-                </div>
-              ))}
-            </div>
+            {loadingBadges ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="size-6 text-gray-300 animate-spin" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {(userBadges.length > 0 ? userBadges : [
+                  { key: 'food_saver', name: 'Food Saver', icon: '🍞', color: 'bg-orange-50', earned: false, progress: 0, requirement_value: 1 },
+                  { key: 'active_member', name: 'Active Member', icon: '⚡', color: 'bg-blue-50', earned: false, progress: 0, requirement_value: 5 },
+                  { key: 'citizen_of_month', name: 'Citizen of Month', icon: '🏆', color: 'bg-yellow-50', earned: false, progress: 0, requirement_value: 10 },
+                  { key: 'local_giver', name: 'Local Giver', icon: '🤝', color: 'bg-green-50', earned: false, progress: 0, requirement_value: 3 },
+                  { key: 'cleanify_champion', name: 'Cleanify Champion', icon: '🌿', color: 'bg-emerald-50', earned: false, progress: 0, requirement_value: 5 },
+                  { key: 'top_helper', name: 'Top Helper', icon: '💪', color: 'bg-purple-50', earned: false, progress: 0, requirement_value: 20 },
+                ]).map((badge: any) => (
+                  <BadgeCard key={badge.key || badge.id} badge={badge} />
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Activity / Posts Tabs */}
-          <div className="px-5">
+          {/* Activity / Coins Tabs */}
+          <div className="px-5 md:px-8">
             <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
               <button
                 onClick={() => setActiveTab('activity')}
@@ -232,92 +291,62 @@ export default function Profile() {
                 Activity
               </button>
               <button
-                onClick={() => setActiveTab('posts')}
+                onClick={() => setActiveTab('coins')}
                 className={`flex-1 py-2 rounded-lg text-[13px] font-medium transition-all ${
-                  activeTab === 'posts' ? 'bg-white text-[#14ae5c] shadow-sm' : 'text-gray-500'
+                  activeTab === 'coins' ? 'bg-white text-[#14ae5c] shadow-sm' : 'text-gray-500'
                 }`}
               >
-                My Posts
+                Coin History
               </button>
             </div>
 
             {activeTab === 'activity' ? (
               <div className="space-y-2">
-                {recentActivity.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                    <div className={`size-9 rounded-full flex items-center justify-center ${
-                      item.type === 'give' ? 'bg-blue-50 text-blue-500' :
-                      item.type === 'activity' ? 'bg-orange-50 text-orange-500' :
-                      'bg-green-50 text-[#14ae5c]'
-                    }`}>
-                      {item.type === 'give' ? <Package className="size-4" /> :
-                       item.type === 'activity' ? <Users className="size-4" /> :
-                       <Flame className="size-4" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-gray-800 truncate">{item.text}</p>
-                      <p className="text-[11px] text-gray-400">{item.time}</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-[#f0a326] text-[12px] font-semibold shrink-0">
-                      +{item.coins}
-                    </div>
-                  </div>
-                ))}
+                <div className="flex flex-col items-center py-8">
+                  <Flame className="size-10 text-gray-300 mb-2" />
+                  <p className="text-gray-400 text-[13px]">
+                    {isGuest ? 'Sign in to see your activity' : 'No activity yet — start sharing!'}
+                  </p>
+                  {!isGuest && (
+                    <button
+                      onClick={() => navigate('/clean-earn')}
+                      className="mt-3 text-[#14ae5c] text-[13px] font-semibold"
+                    >
+                      Try Clean & Earn
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div>
-                {loadingPosts ? (
+                {loadingCoins ? (
                   <div className="flex flex-col items-center py-8">
                     <div className="size-8 border-2 border-gray-200 border-t-[#14ae5c] rounded-full animate-spin mb-2" />
-                    <p className="text-gray-400 text-[13px]">Loading posts...</p>
+                    <p className="text-gray-400 text-[13px]">Loading coin history...</p>
                   </div>
-                ) : userPosts.length > 0 ? (
-                  <div className="space-y-3">
-                    {userPosts.map((post) => (
-                      <div key={post.id} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                        {post.image && (
-                          <ImageWithFallback src={post.image} alt={post.title} className="w-full h-[120px] object-cover" />
-                        )}
-                        <div className="p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-[14px] font-semibold text-gray-800 truncate">{post.title}</h4>
-                              <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{post.description}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-[11px] text-gray-400 capitalize bg-gray-50 px-2 py-0.5 rounded-full">{post.category}</span>
-                                <div className="flex items-center gap-1 text-[#f0a326] text-[11px] font-semibold">
-                                  <div className="size-[14px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-                                    <span className="text-[6px] font-bold">$</span>
-                                  </div>
-                                  {post.coins}
-                                </div>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleDeletePost(post.id)}
-                              className="text-gray-300 hover:text-red-400 p-1 transition-colors"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </div>
+                ) : coinEntries.length > 0 ? (
+                  <div className="space-y-2">
+                    {coinEntries.map((entry) => (
+                      <div key={entry.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                        <div className="size-9 rounded-full bg-yellow-50 flex items-center justify-center">
+                          <Award className="size-4 text-[#f0a326]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] text-gray-800 truncate">{entry.description || entry.category}</p>
+                          <p className="text-[11px] text-gray-400">{new Date(entry.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className={`text-[12px] font-semibold shrink-0 ${entry.amount >= 0 ? 'text-[#14ae5c]' : 'text-red-500'}`}>
+                          {entry.amount >= 0 ? '+' : ''}{entry.amount}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center py-8">
-                    <Package className="size-10 text-gray-300 mb-2" />
+                    <Award className="size-10 text-gray-300 mb-2" />
                     <p className="text-gray-400 text-[13px]">
-                      {isGuest ? 'Sign in to see your posts' : 'No posts yet'}
+                      {isGuest ? 'Sign in to see your coins' : 'No coin history yet'}
                     </p>
-                    {!isGuest && (
-                      <button
-                        onClick={() => navigate('/category/leftovers')}
-                        className="mt-3 text-[#14ae5c] text-[13px] font-semibold"
-                      >
-                        Share your first item
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -346,6 +375,36 @@ function StatCard({ icon: Icon, label, value, color, bg }: {
       </div>
       <span className="text-[16px] font-bold text-gray-800">{value}</span>
       <span className="text-[10px] text-gray-400">{label}</span>
+    </div>
+  );
+}
+
+function BadgeCard({ badge }: { badge: any }) {
+  const bgColors: Record<string, string> = {
+    food_saver: 'bg-orange-50',
+    active_member: 'bg-blue-50',
+    citizen_of_month: 'bg-yellow-50',
+    local_giver: 'bg-green-50',
+    cleanify_champion: 'bg-emerald-50',
+    top_helper: 'bg-purple-50',
+  };
+  const bg = badge.color || bgColors[badge.key] || 'bg-gray-50';
+  const progress = badge.progress ?? 0;
+  const total = badge.requirement_value ?? 1;
+  const pct = Math.min(100, Math.round((progress / total) * 100));
+
+  return (
+    <div className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5 ${!badge.earned ? 'opacity-50' : ''}`}>
+      <span className="text-[24px]">{badge.icon}</span>
+      <span className="text-[10px] font-medium text-gray-700 text-center leading-tight">{badge.name}</span>
+      {!badge.earned && (
+        <div className="w-full bg-black/10 rounded-full h-1 mt-0.5">
+          <div className="bg-current h-1 rounded-full transition-all" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {!badge.earned && (
+        <span className="text-[9px] text-gray-500">{progress}/{total}</span>
+      )}
     </div>
   );
 }

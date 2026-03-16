@@ -183,3 +183,23 @@ input[type="range"]::-moz-range-thumb {
   --normal-bg: #14ae5c !important;
   --normal-text: white !important;
 }
+
+/* Tablet+ base font scaling */
+@media (min-width: 768px) {
+  html {
+    font-size: 17px;
+  }
+}
+@media (min-width: 1024px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Safe area env() support for all devices */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}

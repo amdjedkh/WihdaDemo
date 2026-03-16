@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import imgWihdaTextLogo1 from "figma:asset/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
-import { supabase } from '../lib/supabase';
+import { getStoredToken } from '../lib/api';
 
 export default function SplashPage() {
   const navigate = useNavigate();
@@ -10,10 +10,10 @@ export default function SplashPage() {
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('hold'), 400);
     const t2 = setTimeout(() => setPhase('exit'), 2000);
-    const t3 = setTimeout(async () => {
-      // Check if user is logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+    const t3 = setTimeout(() => {
+      // Check if user has a stored JWT token
+      const token = getStoredToken();
+      if (token) {
         navigate('/home');
       } else {
         navigate('/login');

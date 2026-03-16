@@ -1,14 +1,13 @@
-import image_1682076aeae1debac9f79438f2cc9a64223bb352 from 'figma:asset/1682076aeae1debac9f79438f2cc9a64223bb352.png'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import BottomNav from '../components/BottomNav';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import PageTransition from '../components/PageTransition';
-import image_084f77939cee70576a8518f8a5bb3cb4bd2c33ae from 'figma:asset/084f77939cee70576a8518f8a5bb3cb4bd2c33ae.png';
-import image_55d6b4f98cb2367f7a7f64456f1de71079681202 from 'figma:asset/55d6b4f98cb2367f7a7f64456f1de71079681202.png';
-import image_7271bba7fc27d57890f880f41b244ed65abd79d0 from 'figma:asset/7271bba7fc27d57890f880f41b244ed65abd79d0.png';
 import SwipeBack from '../components/SwipeBack';
+import { apiFetch } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { toast, Toaster } from 'sonner';
 import {
   ArrowLeft,
   Plus,
@@ -16,6 +15,8 @@ import {
   Clock,
   MapPin,
   MessageCircle,
+  Loader2,
+  Heart,
 } from 'lucide-react';
 
 const categoryMeta: Record<string, { title: string; emoji: string; color: string }> = {
@@ -27,146 +28,92 @@ const categoryMeta: Record<string, { title: string; emoji: string; color: string
   exchange: { title: 'Exchange', emoji: '🔄', color: 'bg-teal-50' },
 };
 
-const mockGivePosts = [
-  {
-    id: 1,
-    userName: 'Oualid Laib',
-    userPhoto: 'https://images.unsplash.com/photo-1768696082160-c8da7db9ed95?w=100&h=100&fit=crop',
-    timeAgo: '1hr ago',
-    title: 'Fresh homemade bread',
-    description: 'I have extra bread from baking today. Available for pickup in the neighborhood.',
-    image: 'https://images.unsplash.com/photo-1661509833506-266e183dbe6c?w=600&h=400&fit=crop',
-    coins: 100,
-    category: 'leftovers',
-    location: 'Hadjam Moukhtar',
-  },
-  {
-    id: 2,
-    userName: 'Amina H.',
-    userPhoto: 'https://images.unsplash.com/photo-1770802675122-baf6cab22839?w=100&h=100&fit=crop',
-    timeAgo: '2hr ago',
-    title: 'Homemade couscous',
-    description: 'Made a big pot of couscous with vegetables for a family gathering. Plenty of leftovers!',
-    image: 'https://images.unsplash.com/photo-1688940738506-acfe9334bf5c?w=600&h=400&fit=crop',
-    coins: 90,
-    category: 'leftovers',
-    location: 'Houch Aoun',
-  },
-  {
-    id: 8,
-    userName: 'Rachid T.',
-    userPhoto: 'https://images.unsplash.com/photo-1721713833969-5254d4c4d106?w=100&h=100&fit=crop',
-    timeAgo: '3hr ago',
-    title: 'Baklava pastry tray',
-    description: 'Leftover baklava from a celebration. About 20 pieces, still fresh and crispy.',
-    image: 'https://images.unsplash.com/photo-1769812343879-f49768203a8d?w=600&h=400&fit=crop',
-    coins: 110,
-    category: 'leftovers',
-    location: 'Sidi Yahya',
-  },
-  {
-    id: 9,
-    userName: 'Samira K.',
-    userPhoto: 'https://images.unsplash.com/photo-1675526607070-f5cbd71dde92?w=100&h=100&fit=crop',
-    timeAgo: '4hr ago',
-    title: 'Lentil soup pot',
-    description: 'Warm homemade lentil soup, enough for 3-4 servings. Perfect for this cold weather.',
-    image: 'https://images.unsplash.com/photo-1724856774356-99331a86866f?w=600&h=400&fit=crop',
-    coins: 70,
-    category: 'leftovers',
-    location: 'Hadjam Moukhtar',
-  },
-  {
-    id: 10,
-    userName: 'Mourad B.',
-    userPhoto: 'https://images.unsplash.com/photo-1597835260780-d0ea22a9b66e?w=100&h=100&fit=crop',
-    timeAgo: '5hr ago',
-    title: 'Fresh fruit basket',
-    description: 'Oranges and clementines from my garden. Too many for our family, happy to share!',
-    image: 'https://images.unsplash.com/photo-1771179231898-08373610c123?w=600&h=400&fit=crop',
-    coins: 80,
-    category: 'leftovers',
-    location: 'Houch Aoun',
-  },
-];
-
-const mockGetPosts = [
-  {
-    id: 3,
-    userName: 'Ahmed K.',
-    userPhoto: 'https://images.unsplash.com/photo-1597835260780-d0ea22a9b66e?w=100&h=100&fit=crop',
-    timeAgo: '2hr ago',
-    title: 'Looking for a ladder',
-    description: 'Need a ladder for the weekend for home repairs. Will return Monday.',
-    coins: 50,
-    category: 'borrow',
-    location: 'Sidi Yahya',
-  },
-  {
-    id: 4,
-    userName: 'Fatima B.',
-    userPhoto: 'https://images.unsplash.com/photo-1619545307432-9fc73f8135ff?w=100&h=100&fit=crop',
-    timeAgo: '4hr ago',
-    title: 'Need help moving furniture',
-    description: 'Moving to a new apartment nearby. Need 1-2 people to help carry a couch and table.',
-    coins: 120,
-    category: 'ask-help',
-    location: 'Hadjam Moukhtar',
-  },
-  {
-    id: 5,
-    userName: 'Youcef D.',
-    userPhoto: 'https://images.unsplash.com/photo-1544694032-19eb3ee39243?w=100&h=100&fit=crop',
-    timeAgo: '5hr ago',
-    title: 'Looking for baby stroller',
-    description: 'Does anyone have a baby stroller we could borrow for a few weeks? Our toddler is visiting.',
-    coins: 60,
-    category: 'borrow',
-    location: 'Houch Aoun',
-  },
-  {
-    id: 6,
-    userName: 'Nadia R.',
-    userPhoto: 'https://images.unsplash.com/photo-1769867618566-8c73ee5059ff?w=100&h=100&fit=crop',
-    timeAgo: '6hr ago',
-    title: 'Need a drill for one day',
-    description: 'Installing shelves this weekend. Just need to borrow a power drill for Saturday.',
-    coins: 40,
-    category: 'borrow',
-    location: 'Sidi Yahya',
-  },
-  {
-    id: 7,
-    userName: 'Karim M.',
-    userPhoto: 'https://images.unsplash.com/photo-1760359289500-413a84f54800?w=100&h=100&fit=crop',
-    timeAgo: '8hr ago',
-    title: 'Seeking math tutor for son',
-    description: 'My son needs help with high school math. Looking for a neighbor who can tutor 2x a week.',
-    coins: 150,
-    category: 'ask-help',
-    location: 'Hadjam Moukhtar',
-  },
-];
+function getRelativeTime(isoDate: string) {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}hr ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default function CategoryDetail() {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'give' | 'get'>('give');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  const handlePostClick = () => {
+    navigate(`/post-item/${categoryId}`);
+  };
+
+  const [offers, setOffers] = useState<any[]>([]);
+  const [needs, setNeeds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const meta = categoryMeta[categoryId || ''] || { title: 'Share', emoji: '📋', color: 'bg-gray-50' };
+  const isLeftovers = categoryId === 'leftovers';
 
-  const givePosts = mockGivePosts.filter(
-    (p) => categoryId === 'leftovers' || categoryId === 'old-items' ? p.category === categoryId : true
-  );
-  const getPosts = mockGetPosts;
+  useEffect(() => {
+    if (!isLeftovers) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    Promise.all([
+      apiFetch('/v1/leftovers/offers?status=active&limit=30').catch(() => ({ data: { offers: [] } })),
+      apiFetch('/v1/leftovers/needs?status=active&limit=30').catch(() => ({ data: { needs: [] } })),
+    ]).then(([offersRes, needsRes]) => {
+      setOffers(offersRes?.data?.offers || []);
+      setNeeds(needsRes?.data?.needs || []);
+    }).finally(() => setLoading(false));
+  }, [isLeftovers]);
+
+  // Load user's existing favorites on mount
+  useEffect(() => {
+    if (isLeftovers && user) {
+      apiFetch('/v1/leftovers/favorites')
+        .then(data => {
+          if (data.success) {
+            setFavorites(new Set((data.data.offers || []).map((o: any) => o.id)));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isLeftovers, user]);
+
+  const toggleFavorite = async (offerId: string) => {
+    try {
+      const data = await apiFetch(`/v1/leftovers/offers/${offerId}/favorite`, { method: 'POST' });
+      if (data.success) {
+        setFavorites(prev => {
+          const next = new Set(prev);
+          if (data.data.favorited) next.add(offerId); else next.delete(offerId);
+          return next;
+        });
+      }
+    } catch {}
+  };
+
+  // Filter offers/needs when showFavoritesOnly is active
+  const visibleOffers = showFavoritesOnly
+    ? offers.filter((o) => favorites.has(o.id))
+    : offers;
+
+  const visibleNeeds = showFavoritesOnly
+    ? needs.filter((n) => favorites.has(n.id))
+    : needs;
 
   return (
     <MobileContainer>
       <PageTransition>
+      <Toaster position="top-center" />
       <SwipeBack>
       <div className="flex flex-col size-full bg-white">
         {/* Header */}
-        <div className="px-5 pt-[env(safe-area-inset-top)]">
+        <div className="px-5 md:px-8 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between h-14">
             <button onClick={() => navigate('/home')} className="text-gray-800">
               <ArrowLeft className="size-6" />
@@ -176,7 +123,7 @@ export default function CategoryDetail() {
               <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">{meta.title}</h1>
             </div>
             <button
-              onClick={() => navigate(`/post-item/${categoryId}`)}
+              onClick={handlePostClick}
               className="bg-[#14ae5c] text-white rounded-full size-9 flex items-center justify-center shadow-md active:scale-95 transition-transform"
               aria-label="Add post"
             >
@@ -184,60 +131,92 @@ export default function CategoryDetail() {
             </button>
           </div>
 
-          {/* Give / Get Toggle */}
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
-            <button
-              onClick={() => setActiveTab('give')}
-              className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
-                activeTab === 'give'
-                  ? 'bg-[#14ae5c] text-white shadow-sm'
-                  : 'text-gray-500'
-              }`}
-            >
-              Give
-            </button>
-            <button
-              onClick={() => setActiveTab('get')}
-              className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
-                activeTab === 'get'
-                  ? 'bg-[#14ae5c] text-white shadow-sm'
-                  : 'text-gray-500'
-              }`}
-            >
-              Get
-            </button>
+          {/* Give / Get Toggle + Favorites pill */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex gap-1 bg-gray-100 rounded-xl p-1 flex-1">
+              <button
+                onClick={() => setActiveTab('give')}
+                className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  activeTab === 'give'
+                    ? 'bg-[#14ae5c] text-white shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                Give
+              </button>
+              <button
+                onClick={() => setActiveTab('get')}
+                className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
+                  activeTab === 'get'
+                    ? 'bg-[#14ae5c] text-white shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                Get
+              </button>
+            </div>
+            {isLeftovers && (
+              <button
+                onClick={() => setShowFavoritesOnly((v) => !v)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-medium transition-all border ${
+                  showFavoritesOnly
+                    ? 'bg-red-50 border-red-200 text-red-500'
+                    : 'bg-gray-50 border-gray-200 text-gray-400'
+                }`}
+                aria-label="Toggle favorites only"
+              >
+                <Heart className={`size-3.5 ${showFavoritesOnly ? 'fill-red-500 text-red-500' : ''}`} />
+                <span>Saved</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Posts */}
-        <div className="flex-1 overflow-y-auto pb-24 px-5">
-          {activeTab === 'give' ? (
-            givePosts.length > 0 ? (
-              <div className="space-y-4">
-                {givePosts.map((post) => (
-                  <PostCard key={post.id} post={post} navigate={navigate} />
+        <div className="flex-1 overflow-y-auto pb-24 md:pb-28 px-5 md:px-8">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="size-8 text-[#14ae5c] animate-spin" />
+            </div>
+          ) : !isLeftovers ? (
+            <EmptyState
+              emoji={meta.emoji}
+              title="Coming Soon"
+              description="This category will be available in an upcoming update."
+            />
+          ) : activeTab === 'give' ? (
+            visibleOffers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {visibleOffers.map((offer) => (
+                  <PostCard
+                    key={offer.id}
+                    post={offer}
+                    navigate={navigate}
+                    isFavorited={favorites.has(offer.id)}
+                    onFavorite={() => toggleFavorite(offer.id)}
+                  />
                 ))}
               </div>
             ) : (
               <EmptyState
-                emoji="📦"
-                title="No items shared yet"
-                description="Be the first to share something!"
-                onAction={() => navigate(`/post-item/${categoryId}`)}
+                emoji={showFavoritesOnly ? '❤️' : '📦'}
+                title={showFavoritesOnly ? 'No saved items' : 'No items shared yet'}
+                description={showFavoritesOnly ? 'Tap the heart on a post to save it here' : 'Be the first to share something!'}
+                onAction={showFavoritesOnly ? undefined : handlePostClick}
                 actionLabel="Share Something"
               />
             )
-          ) : getPosts.length > 0 ? (
-            <div className="space-y-4">
-              {getPosts.map((post) => (
-                <RequestCard key={post.id} post={post} navigate={navigate} />
+          ) : visibleNeeds.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {visibleNeeds.map((need) => (
+                <RequestCard key={need.id} post={need} navigate={navigate} />
               ))}
             </div>
           ) : (
             <EmptyState
-              emoji="🔍"
-              title="No requests available"
-              description="Check back later to see what your neighbors need"
+              emoji={showFavoritesOnly ? '❤️' : '🔍'}
+              title={showFavoritesOnly ? 'No saved requests' : 'No requests available'}
+              description={showFavoritesOnly ? 'Tap the heart on a post to save it here' : 'Check back later to see what your neighbors need'}
             />
           )}
         </div>
@@ -250,47 +229,62 @@ export default function CategoryDetail() {
   );
 }
 
-function PostCard({ post, navigate }: { post: any; navigate: any }) {
+function PostCard({
+  post,
+  navigate,
+  isFavorited,
+  onFavorite,
+}: {
+  post: any;
+  navigate: any;
+  isFavorited: boolean;
+  onFavorite: () => void;
+}) {
+  const userName = post.user?.display_name || 'Neighbor';
+  const timeAgo = getRelativeTime(post.created_at);
+  const portions = post.survey?.portions;
+  const coins = 100;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* User header */}
       <div className="flex items-center gap-3 p-4 pb-2">
-        <ImageWithFallback
-          src={post.userPhoto}
-          alt={post.userName}
-          className="size-10 rounded-full object-cover"
-        />
+        <div className="size-10 rounded-full bg-[#14ae5c]/10 flex items-center justify-center">
+          <span className="text-[16px] font-bold text-[#14ae5c]">{userName[0]?.toUpperCase()}</span>
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-gray-800">{post.userName}</p>
+          <p className="text-[14px] font-semibold text-gray-800">{userName}</p>
           <div className="flex items-center gap-2 text-[11px] text-gray-400">
-            <span className="flex items-center gap-0.5"><Clock className="size-3" />{post.timeAgo}</span>
-            <span className="flex items-center gap-0.5"><MapPin className="size-3" />{post.location}</span>
+            <span className="flex items-center gap-0.5"><Clock className="size-3" />{timeAgo}</span>
           </div>
         </div>
-        <button className="text-gray-400">
-          <MoreVertical className="size-4" />
+        {/* Favorite button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onFavorite(); }}
+          className="p-1.5 rounded-full transition-colors active:scale-90"
+          aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Heart
+            className={`size-4 transition-colors ${
+              isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-300'
+            }`}
+          />
         </button>
       </div>
 
       {/* Content */}
       <div className="px-4 pb-2">
-        <h4 className="text-[14px] font-semibold text-gray-800 mb-1">{post.title}</h4>
-        <p className="text-[12px] text-gray-500 line-clamp-2">{post.description}</p>
+        <h4 className="text-[14px] md:text-[16px] font-semibold text-gray-800 mb-1">{post.title}</h4>
+        {post.description && (
+          <p className="text-[12px] text-gray-500 line-clamp-2">{post.description}</p>
+        )}
+        {portions && (
+          <p className="text-[11px] text-[#14ae5c] mt-1 font-medium">{portions} portion{portions > 1 ? 's' : ''} available</p>
+        )}
       </div>
 
-      {/* Image */}
-      {post.image && (
-        <div className="mx-4 rounded-xl overflow-hidden mb-3">
-          <ImageWithFallback
-            src={post.image}
-            alt={post.title}
-            className="w-full h-[180px] object-cover"
-          />
-        </div>
-      )}
-
       {/* Footer */}
-      <div className="px-4 pb-4 flex items-center justify-between">
+      <div className="px-4 pb-4 pt-2 flex items-center justify-between">
         <button
           onClick={() => navigate(`/chat/${post.id}`)}
           className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform"
@@ -301,7 +295,7 @@ function PostCard({ post, navigate }: { post: any; navigate: any }) {
           <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
             <span className="text-[7px] font-bold">$</span>
           </div>
-          {post.coins}
+          {coins}
         </div>
       </div>
     </div>
@@ -309,21 +303,35 @@ function PostCard({ post, navigate }: { post: any; navigate: any }) {
 }
 
 function RequestCard({ post, navigate }: { post: any; navigate: any }) {
+  const userName = post.user?.display_name || 'Neighbor';
+  const timeAgo = getRelativeTime(post.created_at);
+  const portions = post.survey?.portions;
+  const urgencyColors: Record<string, string> = {
+    urgent: 'text-red-500',
+    high: 'text-orange-500',
+    normal: 'text-gray-500',
+    low: 'text-gray-400',
+  };
+
   return (
     <div className="bg-gray-50 rounded-2xl p-4">
       <div className="flex items-center gap-3 mb-3">
-        <ImageWithFallback
-          src={post.userPhoto}
-          alt={post.userName}
-          className="size-10 rounded-full object-cover"
-        />
+        <div className="size-10 rounded-full bg-[#52ADE5]/10 flex items-center justify-center">
+          <span className="text-[16px] font-bold text-[#52ADE5]">{userName[0]?.toUpperCase()}</span>
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-gray-800">{post.userName}</p>
-          <p className="text-[11px] text-gray-400">{post.timeAgo} &middot; {post.location}</p>
+          <p className="text-[14px] font-semibold text-gray-800">{userName}</p>
+          <p className={`text-[11px] ${urgencyColors[post.urgency] || 'text-gray-400'}`}>
+            {timeAgo} &middot; {post.urgency || 'normal'} urgency
+          </p>
         </div>
       </div>
-      <h4 className="text-[14px] font-semibold text-gray-800 mb-1">{post.title}</h4>
-      <p className="text-[12px] text-gray-500 mb-3">{post.description}</p>
+      {portions && (
+        <p className="text-[13px] font-medium text-gray-700 mb-1">Needs {portions} portion{portions > 1 ? 's' : ''}</p>
+      )}
+      {post.survey?.notes && (
+        <p className="text-[12px] text-gray-500 mb-3">{post.survey.notes}</p>
+      )}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(`/chat/${post.id}`)}
@@ -335,7 +343,7 @@ function RequestCard({ post, navigate }: { post: any; navigate: any }) {
           <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
             <span className="text-[7px] font-bold">$</span>
           </div>
-          {post.coins}
+          50
         </div>
       </div>
     </div>

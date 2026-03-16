@@ -22,8 +22,8 @@ export default function Signup() {
       setError('Please fill in all fields');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     if (password !== confirmPassword) {
@@ -39,7 +39,13 @@ export default function Signup() {
     if (result.error) {
       setError(result.error);
     } else {
-      navigate('/home');
+      // Redirect to OTP verification page
+      navigate('/verify-otp', {
+        state: {
+          contactChannel: result.contactChannel || 'email',
+          email,
+        },
+      });
     }
   };
 
@@ -70,7 +76,7 @@ export default function Signup() {
             </div>
             <div>
               <p className="text-[13px] font-semibold text-gray-800">Welcome Bonus!</p>
-              <p className="text-[11px] text-gray-500">Get 100 coins when you sign up</p>
+              <p className="text-[11px] text-gray-500">Get coins when you verify and join</p>
             </div>
           </div>
 
@@ -109,7 +115,7 @@ export default function Signup() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password (min 6 characters)"
+                placeholder="Password (min 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-12 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
