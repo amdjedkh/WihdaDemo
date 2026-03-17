@@ -42,6 +42,7 @@ export default function CleanAndEarn() {
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [activeSubmissionId, setActiveSubmissionId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputBeforeRef = useRef<HTMLInputElement>(null);
   const fileInputAfterRef = useRef<HTMLInputElement>(null);
@@ -69,8 +70,14 @@ export default function CleanAndEarn() {
         setStep('upload-before');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to start submission');
-      toast.error(err.message || 'Failed to start');
+      if (err.code === 'ACTIVE_SUBMISSION_EXISTS' || err.message?.includes('active submission')) {
+        const idMatch = err.message?.match(/id: ([a-f0-9-]{36})/);
+        if (idMatch) setActiveSubmissionId(idMatch[1]);
+        setError('active_submission');
+      } else {
+        setError(err.message || 'Failed to start submission');
+        toast.error(err.message || 'Failed to start');
+      }
     } finally {
       setLoading(false);
     }
@@ -263,6 +270,7 @@ export default function CleanAndEarn() {
     setIsTimerRunning(false);
     setCoinsEarned(0);
     setError('');
+    setActiveSubmissionId(null);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -305,12 +313,33 @@ export default function CleanAndEarn() {
         <div className="flex-1 overflow-y-auto px-5 pb-8 relative">
 
           {/* Global error */}
-          {error && (
+          {error === 'active_submission' ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+              <div className="flex items-start gap-2 mb-3">
+                <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
+                <p className="text-[13px] text-red-600 font-medium">You have an unfinished submission</p>
+              </div>
+              <p className="text-[12px] text-red-500 mb-3 pl-6">Please complete or abandon your previous session before starting a new one.</p>
+              {activeSubmissionId && (
+                <button
+                  onClick={() => {
+                    setSubmissionId(activeSubmissionId);
+                    setError('');
+                    setActiveSubmissionId(null);
+                    setStep('upload-before');
+                  }}
+                  className="w-full bg-red-500 text-white py-2.5 rounded-xl text-[13px] font-semibold active:scale-[0.98] transition-transform"
+                >
+                  Resume Session
+                </button>
+              )}
+            </div>
+          ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-center gap-2">
               <AlertCircle className="size-4 text-red-500 shrink-0" />
               <p className="text-[13px] text-red-600">{error}</p>
             </div>
-          )}
+          ) : null}
 
           {/* ── Intro ── */}
           {step === 'intro' && (
@@ -403,7 +432,6 @@ export default function CleanAndEarn() {
                 ref={fileInputBeforeRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 onChange={handleBeforeImageUpload}
                 className="hidden"
               />
@@ -521,7 +549,6 @@ export default function CleanAndEarn() {
                 ref={fileInputAfterRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 onChange={handleAfterImageUpload}
                 className="hidden"
               />
