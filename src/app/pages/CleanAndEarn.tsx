@@ -28,7 +28,6 @@ import {
 
 type CleaningStep = 'checking' | 'intro' | 'active-exists' | 'upload-before' | 'timer' | 'upload-after' | 'validating' | 'approved' | 'rejected' | 'pending-review';
 
-const MIN_DELAY_MINUTES = 20;
 
 export default function CleanAndEarn() {
   const navigate = useNavigate();
@@ -182,7 +181,7 @@ export default function CleanAndEarn() {
 
       setBeforeUploadedAt(new Date());
       setStep('timer');
-      toast('Before photo uploaded!', { description: `Wait ${MIN_DELAY_MINUTES} min before taking after photo` });
+      toast('Before photo uploaded!', { description: 'Now clean the area and take the after photo' });
     } catch (err: any) {
       setError(err.message || 'Failed to upload before photo');
       toast.error(err.message || 'Upload failed');
@@ -211,16 +210,6 @@ export default function CleanAndEarn() {
   const handleAfterImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !submissionId) return;
-
-    // Client-side 20-min gate check (backend also enforces this)
-    if (beforeUploadedAt) {
-      const elapsed = Date.now() - beforeUploadedAt.getTime();
-      if (elapsed < MIN_DELAY_MINUTES * 60 * 1000) {
-        const remaining = Math.ceil((MIN_DELAY_MINUTES * 60 * 1000 - elapsed) / 60000);
-        toast.error(`Please wait ${remaining} more minute(s) before uploading the after photo`);
-        return;
-      }
-    }
 
     setLoading(true);
     setError('');
@@ -335,12 +324,7 @@ export default function CleanAndEarn() {
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const minutesSinceBefore = beforeUploadedAt
-    ? Math.floor((Date.now() - beforeUploadedAt.getTime()) / 60000)
-    : 0;
-  const canUploadAfter = minutesSinceBefore >= MIN_DELAY_MINUTES;
-
-  const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-exists') ? 0 : step === 'upload-before' ? 1 : step === 'timer' ? 2 : step === 'upload-after' ? 3 : 4;
+const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-exists') ? 0 : step === 'upload-before' ? 1 : step === 'timer' ? 2 : step === 'upload-after' ? 3 : 4;
 
   return (
     <MobileContainer>
@@ -451,7 +435,7 @@ export default function CleanAndEarn() {
               <div className="w-full space-y-3 mb-8">
                 {[
                   { icon: Camera, text: 'Take a "before" photo of the dirty area', step: '1' },
-                  { icon: Clock, text: `Wait at least ${MIN_DELAY_MINUTES} minutes while you clean`, step: '2' },
+                  { icon: Clock, text: 'Clean the area thoroughly', step: '2' },
                   { icon: Upload, text: 'Take an "after" photo when done', step: '3' },
                   { icon: Sparkles, text: 'Get coins after AI validation (up to 48h)', step: '4' },
                 ].map((item) => (
@@ -531,7 +515,7 @@ export default function CleanAndEarn() {
                 {isTimerRunning ? 'Timer is running... Keep cleaning!' : 'Start the timer when ready'}
               </p>
               <p className="text-[12px] text-[#14ae5c] font-medium mb-4">
-                You must wait at least {MIN_DELAY_MINUTES} minutes before the after photo
+                Start the timer when you begin cleaning
               </p>
 
               {beforeImage && (
@@ -590,14 +574,6 @@ export default function CleanAndEarn() {
               </p>
 
               {/* Time check banner */}
-              {!canUploadAfter && beforeUploadedAt && (
-                <div className="w-full bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 flex items-center gap-2">
-                  <Clock className="size-4 text-yellow-600 shrink-0" />
-                  <p className="text-[12px] text-yellow-700">
-                    Wait {MIN_DELAY_MINUTES - minutesSinceBefore} more minute(s) before uploading the after photo
-                  </p>
-                </div>
-              )}
 
               <div className="flex gap-2 w-full mb-4">
                 {beforeImage && (
@@ -612,8 +588,8 @@ export default function CleanAndEarn() {
               </div>
 
               <button
-                onClick={() => canUploadAfter && setPhotoSheetFor('after')}
-                disabled={loading || !canUploadAfter}
+                onClick={() => setPhotoSheetFor('after')}
+                disabled={loading}
                 className="w-full h-[200px] border-2 border-dashed border-[#14ae5c]/40 rounded-2xl flex flex-col items-center justify-center bg-green-50/30 active:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -624,7 +600,7 @@ export default function CleanAndEarn() {
                       <ImageIcon className="size-8 text-[#14ae5c]" />
                     </div>
                     <p className="text-[14px] font-medium text-[#14ae5c]">
-                      {canUploadAfter ? 'Tap to add photo' : `Wait ${MIN_DELAY_MINUTES - minutesSinceBefore} min`}
+                      Tap to add photo
                     </p>
                   </>
                 )}
