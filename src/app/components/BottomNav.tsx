@@ -22,7 +22,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-100/80 pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around px-2 h-[64px] md:h-[72px] max-w-3xl mx-auto">
         {navItems.map((item) => {
           if (item.path === '__fab__') {
