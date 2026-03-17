@@ -5,28 +5,21 @@
 /* ===== NATIVE APP FEEL ===== */
 
 /* Prevent overscroll bounce */
-html {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
+html, body {
+  margin: 0;
+  padding: 0;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
+/* Pin #root to exact viewport bounds — works correctly in iOS WKWebView */
 #root {
-  width: 100%;
-  height: 100%;
-  height: -webkit-fill-available;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
 }
 
