@@ -121,7 +121,7 @@ export default function CleanAndEarn() {
       setError('');
       const data = await apiFetch('/v1/cleanify/start', { method: 'POST' });
       if (data.success) {
-        setSubmissionId(data.data.id);
+        setSubmissionId(data.data.submission_id);
         setStep('upload-before');
         // Schedule a local notification reminder
         LocalNotifications.schedule({
@@ -153,7 +153,7 @@ export default function CleanAndEarn() {
 
     try {
       // 1. Get presigned upload URL
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || 'jpg');
       const presignedData = await apiFetch(`/v1/cleanify/${submissionId}/before/presigned-url`, {
         method: 'POST',
         body: JSON.stringify({ file_extension: ext }),
@@ -163,7 +163,7 @@ export default function CleanAndEarn() {
 
       // 2. Upload file directly to R2
       const uploadRes = await fetch(upload_url, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': file.type },
         body: file,
       });
@@ -227,7 +227,7 @@ export default function CleanAndEarn() {
 
     try {
       // 1. Get presigned URL
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || 'jpg');
       const presignedData = await apiFetch(`/v1/cleanify/${submissionId}/after/presigned-url`, {
         method: 'POST',
         body: JSON.stringify({ file_extension: ext }),
@@ -237,7 +237,7 @@ export default function CleanAndEarn() {
 
       // 2. Upload
       const uploadRes = await fetch(upload_url, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': file.type },
         body: file,
       });
