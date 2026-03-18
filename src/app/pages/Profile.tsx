@@ -58,7 +58,7 @@ export default function Profile() {
     setUploadingPhoto(true);
     try {
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('file', file);
       await apiUpload('/v1/me/photo', formData);
       await refreshProfile();
     } catch (err: any) {

@@ -16,23 +16,16 @@ import {
   Info,
   Home as HomeIcon,
   Leaf,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 interface HeaderProps {
   showBack?: boolean;
   title?: string;
 }
-
-const menuItems = [
-  { label: 'Home', path: '/home', Icon: HomeIcon },
-  { label: 'My Listings', path: '/my-listings', Icon: Package },
-  { label: 'My Impact', path: '/my-impact', Icon: Flame },
-  { label: 'My Badges', path: '/my-badges', Icon: Award },
-  { label: 'Clean & Earn History', path: '/cleanify-history', Icon: Leaf },
-  { label: 'Profile', path: '/profile', Icon: User },
-  { label: 'Notifications', path: '/notifications', Icon: Bell },
-];
 
 export default function Header({
   showBack = false,
@@ -40,7 +33,19 @@ export default function Header({
 }: HeaderProps) {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { language } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const menuItems = [
+    { label: t(language, 'home'),         path: '/home',            Icon: HomeIcon },
+    { label: t(language, 'myListings'),   path: '/my-listings',     Icon: Package },
+    { label: t(language, 'myImpact'),     path: '/my-impact',       Icon: Flame },
+    { label: t(language, 'myBadges'),     path: '/my-badges',       Icon: Award },
+    { label: t(language, 'cleanHistory'), path: '/cleanify-history', Icon: Leaf },
+    { label: t(language, 'profile'),      path: '/profile',         Icon: User },
+    { label: t(language, 'settings'),     path: '/settings',        Icon: Settings },
+    { label: t(language, 'notifications'), path: '/notifications',  Icon: Bell },
+  ];
 
   const userName = profile?.name?.split(' ')[0] || 'Neighbor';
   const neighborhood = profile?.location || 'Set location';
@@ -168,21 +173,21 @@ export default function Header({
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-gray-50"
               >
                 <HelpCircle className="size-5 text-gray-500" />
-                <span className="text-[14px] text-gray-700">Help Center</span>
+                <span className="text-[14px] text-gray-700">{t(language, 'helpCenter')}</span>
               </button>
               <button
                 onClick={() => { navigate('/terms'); setSidebarOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-gray-50"
               >
                 <FileText className="size-5 text-gray-500" />
-                <span className="text-[14px] text-gray-700">Terms &amp; Conditions</span>
+                <span className="text-[14px] text-gray-700">{t(language, 'terms')}</span>
               </button>
               <button
                 onClick={() => { navigate('/about'); setSidebarOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-gray-50"
               >
                 <Info className="size-5 text-gray-500" />
-                <span className="text-[14px] text-gray-700">About Us</span>
+                <span className="text-[14px] text-gray-700">{t(language, 'aboutUs')}</span>
               </button>
             </div>
           </div>

@@ -9,7 +9,7 @@ interface MobileContainerProps {
 
 export default function MobileContainer({ children, showBackground = false }: MobileContainerProps) {
   return (
-    <div className="h-full w-full bg-white relative">
+    <div className="h-full w-full bg-white dark:bg-gray-900 relative">
       {showBackground && (
         <img
           src={wihdaBg}
