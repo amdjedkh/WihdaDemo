@@ -5,6 +5,8 @@ import BottomNav from '../components/BottomNav';
 import PageTransition from '../components/PageTransition';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import {
   ArrowLeft,
   Bell,
@@ -48,6 +50,7 @@ const notifBg = (type: string) => {
 export default function Notifications() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useApp();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -98,15 +101,15 @@ export default function Notifications() {
   return (
     <MobileContainer>
       <PageTransition>
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="px-5 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between h-14">
-            <button onClick={() => navigate(-1)} className="text-gray-800">
+            <button onClick={() => navigate(-1)} className="text-gray-800 dark:text-gray-200">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">
-              Notifications
+            <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white font-[Poppins,sans-serif]">
+              {t(language, 'notificationsTitle')}
               {unreadCount > 0 && (
                 <span className="ml-2 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
                   {unreadCount}
@@ -118,7 +121,7 @@ export default function Notifications() {
                 onClick={markAllRead}
                 className="text-[#14ae5c] text-[12px] font-medium"
               >
-                Mark all read
+                {t(language, 'markAllRead')}
               </button>
             ) : (
               <div className="w-16" />
@@ -131,25 +134,25 @@ export default function Notifications() {
           {!user ? (
             <div className="flex flex-col items-center justify-center py-20 px-6">
               <BellOff className="size-12 text-gray-300 mb-3" />
-              <p className="text-gray-500 text-[14px] font-medium">Sign in to see notifications</p>
+              <p className="text-gray-500 dark:text-gray-400 text-[14px] font-medium">{t(language, 'signInForNotifs')}</p>
               <button
                 onClick={() => navigate('/login')}
                 className="mt-4 bg-[#14ae5c] text-white px-6 py-2.5 rounded-xl text-[13px] font-semibold"
               >
-                Sign In
+                {t(language, 'signIn')}
               </button>
             </div>
           ) : loading ? (
             <div className="flex flex-col items-center py-12">
               <Loader2 className="size-8 text-[#14ae5c] animate-spin mb-2" />
-              <p className="text-gray-400 text-[13px]">Loading notifications...</p>
+              <p className="text-gray-400 text-[13px]">{t(language, 'loadingNotifs')}</p>
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-6">
               <Bell className="size-12 text-gray-300 mb-3" />
-              <p className="text-gray-500 text-[14px] font-medium">No notifications yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-[14px] font-medium">{t(language, 'noNotifs')}</p>
               <p className="text-gray-400 text-[12px] mt-1 text-center">
-                You'll see updates about your activities, matches, and cleanify submissions here
+                {t(language, 'noNotifsDesc')}
               </p>
             </div>
           ) : (

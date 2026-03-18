@@ -5,6 +5,8 @@ import PageTransition from '../components/PageTransition';
 import { apiFetch } from '../lib/api';
 import { ArrowLeft, X, Loader2, ArrowRight, CheckCircle2, Lock } from 'lucide-react';
 import { BADGE_IMAGES } from './Profile';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 // ─── Badge metadata ───────────────────────────────────────────────────────────
 
@@ -72,6 +74,7 @@ function BadgeIcon({
 
 export default function MyBadges() {
   const navigate = useNavigate();
+  const { language } = useApp();
   const [badges, setBadges]               = useState<any[]>([]);
   const [loading, setLoading]             = useState(true);
   const [selectedBadge, setSelectedBadge] = useState<any | null>(null);
@@ -88,16 +91,16 @@ export default function MyBadges() {
   return (
     <MobileContainer>
       <PageTransition>
-      <div className="flex flex-col size-full bg-gray-50">
+      <div className="flex flex-col size-full bg-gray-50 dark:bg-gray-900">
 
         {/* Header */}
-        <div className="px-5 pt-[env(safe-area-inset-top)] bg-white border-b border-gray-100">
+        <div className="px-5 pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center h-14 gap-3">
-            <button onClick={() => navigate(-1)} className="text-gray-800">
+            <button onClick={() => navigate(-1)} className="text-gray-800 dark:text-gray-200">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 flex-1 font-[Poppins,sans-serif]">My Badges</h1>
-            <span className="text-[13px] text-[#14ae5c] font-semibold bg-green-50 px-3 py-1 rounded-full">
+            <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white flex-1 font-[Poppins,sans-serif]">{t(language, 'myBadgesTitle')}</h1>
+            <span className="text-[13px] text-[#14ae5c] font-semibold bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
               {earned}/{badges.length}
             </span>
           </div>
@@ -111,14 +114,14 @@ export default function MyBadges() {
           ) : (
             <>
               {/* Overall progress */}
-              <div className="bg-white rounded-3xl p-5 mb-4 shadow-sm border border-gray-100">
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 mb-4 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-[16px] font-bold text-gray-900">Your Progress</p>
+                    <p className="text-[16px] font-bold text-gray-900 dark:text-white">{t(language, 'yourProgress')}</p>
                     <p className="text-[12px] text-gray-400 mt-0.5">
                       {earned === badges.length && badges.length > 0
-                        ? 'All badges earned! 🎉'
-                        : `${badges.length - earned} badge${badges.length - earned !== 1 ? 's' : ''} remaining`}
+                        ? t(language, 'allBadgesEarned')
+                        : `${badges.length - earned} ${t(language, 'badgesRemaining')}`}
                     </p>
                   </div>
                   <div className="size-14 rounded-full bg-[#14ae5c]/10 flex items-center justify-center">
@@ -169,7 +172,7 @@ export default function MyBadges() {
 
                       {badge.earned ? (
                         <span className="text-[10px] bg-white/60 text-[#14ae5c] px-2.5 py-0.5 rounded-full font-semibold">
-                          Earned ✓
+                          {t(language, 'earned')}
                         </span>
                       ) : (
                         <>
@@ -196,7 +199,7 @@ export default function MyBadges() {
         {selectedBadge && (
           <div className="fixed inset-0 z-50 flex items-end">
             <div className="absolute inset-0 bg-black/40" onClick={() => setSelectedBadge(null)} />
-            <div className="relative bg-white rounded-t-3xl w-full px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] shadow-2xl">
+            <div className="relative bg-white dark:bg-gray-800 rounded-t-3xl w-full px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] shadow-2xl">
 
               {/* Handle */}
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />

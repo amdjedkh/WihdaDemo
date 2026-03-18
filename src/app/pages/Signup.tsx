@@ -4,6 +4,8 @@ import MobileContainer from '../components/MobileContainer';
 import imgWihdaTextLogo1 from "figma:asset/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Gift } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -15,6 +17,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signUp } = useAuth();
+  const { language } = useApp();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,6 @@ export default function Signup() {
     if (result.error) {
       setError(result.error);
     } else {
-      // Redirect to OTP verification page
       navigate('/verify-otp', {
         state: {
           contactChannel: result.contactChannel || 'email',
@@ -51,11 +53,11 @@ export default function Signup() {
 
   return (
     <MobileContainer>
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         {/* Header */}
-        <div className="px-5 pt-[env(safe-area-inset-top)]">
+        <div className="px-5 pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-900">
           <div className="flex items-center h-14">
-            <button onClick={() => navigate('/login')} className="text-gray-800">
+            <button onClick={() => navigate('/login')} className="text-gray-800 dark:text-gray-200">
               <ArrowLeft className="size-6" />
             </button>
           </div>
@@ -66,8 +68,8 @@ export default function Signup() {
           <div className="flex items-center gap-3 mb-2">
             <img src={imgWihdaTextLogo1} alt="Wihda" className="w-[100px] object-contain" />
           </div>
-          <h2 className="text-[24px] font-bold text-gray-900 mb-1 font-[Poppins,sans-serif]">Create Account</h2>
-          <p className="text-[14px] text-gray-400 mb-6">Join your neighborhood community</p>
+          <h2 className="text-[24px] font-bold text-gray-900 dark:text-white mb-1 font-[Poppins,sans-serif]">{t(language, 'createAccount')}</h2>
+          <p className="text-[14px] text-gray-400 mb-6">{t(language, 'joinCommunity')}</p>
 
           {/* Welcome bonus callout */}
           <div className="bg-gradient-to-r from-[#fff9e6] to-[#fef3cd] border border-[#f0a326]/20 rounded-xl p-3 mb-6 flex items-center gap-3">
@@ -75,8 +77,8 @@ export default function Signup() {
               <Gift className="size-5 text-[#f0a326]" />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-gray-800">Welcome Bonus!</p>
-              <p className="text-[11px] text-gray-500">Get coins when you verify and join</p>
+              <p className="text-[13px] font-semibold text-gray-800">{t(language, 'welcomeBonus')}</p>
+              <p className="text-[11px] text-gray-500">{t(language, 'welcomeBonusDesc')}</p>
             </div>
           </div>
 
@@ -91,10 +93,10 @@ export default function Signup() {
               <User className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Full name"
+                placeholder={t(language, 'fullName')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-4 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-4 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="name"
               />
             </div>
@@ -103,10 +105,10 @@ export default function Signup() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder={t(language, 'emailAddress')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-4 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-4 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="email"
               />
             </div>
@@ -115,10 +117,10 @@ export default function Signup() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password (min 8 characters)"
+                placeholder={t(language, 'passwordMin')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-12 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-12 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="new-password"
               />
               <button
@@ -134,10 +136,10 @@ export default function Signup() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Confirm password"
+                placeholder={t(language, 'confirmPasswordLabel')}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-4 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-4 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="new-password"
               />
             </div>
@@ -151,24 +153,24 @@ export default function Signup() {
                 <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Create Account <ArrowRight className="size-5" />
+                  {t(language, 'createAccount')} <ArrowRight className="size-5" />
                 </>
               )}
             </button>
           </form>
 
           <p className="text-[12px] text-gray-400 text-center mt-4 leading-relaxed">
-            By signing up, you agree to our Terms of Service and Privacy Policy
+            {t(language, 'termsAgreement')}
           </p>
 
           <div className="text-center mt-6">
-            <p className="text-[14px] text-gray-500">
-              Already have an account?{' '}
+            <p className="text-[14px] text-gray-500 dark:text-gray-400">
+              {t(language, 'alreadyHaveAccount')}{' '}
               <button
                 onClick={() => navigate('/login')}
                 className="text-[#14ae5c] font-semibold"
               >
-                Sign In
+                {t(language, 'signIn')}
               </button>
             </p>
           </div>

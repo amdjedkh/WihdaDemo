@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import { ArrowLeft } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 const sections = [
   {
@@ -50,48 +52,49 @@ const sections = [
   },
   {
     title: '12. Contact',
-    body: 'For questions about these Terms, contact us at contact@whtapp.com.',
+    body: 'For questions about these Terms, contact us at contact@wihdaapp.com.',
   },
 ];
 
 export default function Terms() {
   const navigate = useNavigate();
+  const { language } = useApp();
 
   return (
     <MobileContainer>
       <PageTransition>
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="px-5 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center h-14 gap-3">
-            <button onClick={() => navigate(-1)} className="text-gray-800">
+            <button onClick={() => navigate(-1)} className="text-gray-800 dark:text-gray-200">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 flex-1 font-[Poppins,sans-serif]">Terms &amp; Conditions</h1>
+            <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white flex-1 font-[Poppins,sans-serif]">{t(language, 'termsTitle')}</h1>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto pb-10 px-5">
           {/* Intro */}
           <div className="bg-gradient-to-r from-[#14ae5c] to-emerald-500 rounded-2xl p-5 mb-6">
-            <p className="text-white font-semibold text-[15px] mb-1">Terms &amp; Conditions</p>
-            <p className="text-white/80 text-[12px]">Last updated: March 2025</p>
+            <p className="text-white font-semibold text-[15px] mb-1">{t(language, 'termsTitle')}</p>
+            <p className="text-white/80 text-[12px]">{t(language, 'termsLastUpdated')}</p>
             <p className="text-white/80 text-[12px] mt-2 leading-relaxed">
-              Please read these terms carefully before using Wihda. They govern your use of the App and your participation in the community.
+              {t(language, 'termsIntro')}
             </p>
           </div>
 
           {/* Sections */}
           <div className="space-y-4">
             {sections.map((section) => (
-              <div key={section.title} className="bg-gray-50 rounded-2xl p-4">
-                <h3 className="text-[13px] font-semibold text-gray-800 mb-2">{section.title}</h3>
-                <p className="text-[12px] text-gray-500 leading-relaxed">{section.body}</p>
+              <div key={section.title} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
+                <h3 className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 mb-2">{section.title}</h3>
+                <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed">{section.body}</p>
               </div>
             ))}
           </div>
 
-          <p className="text-center text-[11px] text-gray-300 mt-6">© 2025 Wihda. All rights reserved.</p>
+          <p className="text-center text-[11px] text-gray-300 dark:text-gray-600 mt-6">© 2025 Wihda. All rights reserved.</p>
         </div>
       </div>
       </PageTransition>

@@ -1,5 +1,7 @@
 import image_68006784dd90767bc6dc432709cdab530114952c from 'figma:asset/68006784dd90767bc6dc432709cdab530114952c.png'
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useNavigate } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
@@ -32,6 +34,7 @@ type CleaningStep = 'checking' | 'intro' | 'active-exists' | 'upload-before' | '
 export default function CleanAndEarn() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
+  const { language } = useApp();
   const [step, setStep] = useState<CleaningStep>('checking');
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [activeSubmission, setActiveSubmission] = useState<any | null>(null);
@@ -330,14 +333,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
     <MobileContainer>
       <PageTransition>
       <SwipeBack>
-      <div className="flex flex-col size-full">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         {/* Header */}
         <div className="px-5 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center gap-3 h-14">
-            <button onClick={() => navigate('/activities')} className="text-gray-800">
+            <button onClick={() => navigate('/activities')} className="text-gray-800 dark:text-gray-200">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">Clean & Earn</h1>
+            <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white font-[Poppins,sans-serif]">{t(language, 'cleanEarnTitle')}</h1>
           </div>
 
           {/* Progress Steps */}
@@ -459,12 +462,12 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   alt="Volunteers cleaning"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white dark:from-gray-900 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white dark:from-gray-900 to-transparent" />
               </div>
-              <h2 className="text-[22px] font-semibold text-gray-900 text-center mb-2">Make It Shine!</h2>
-              <p className="text-gray-500 text-[14px] text-center mb-8 px-4">
-                Clean an area in your neighborhood and earn coins. Our AI will verify your work.
+              <h2 className="text-[22px] font-semibold text-gray-900 dark:text-white text-center mb-2">{t(language, 'makeItShine')}</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-[14px] text-center mb-8 px-4">
+                {t(language, 'cleanEarnDesc')}
               </p>
 
               <div className="w-full space-y-3 mb-8">
@@ -795,9 +798,9 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
       {photoSheetFor && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => setPhotoSheetFor(null)} />
-          <div className="relative bg-white rounded-t-3xl px-5 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
-            <p className="text-[15px] font-semibold text-gray-900 mb-4 text-center">Add Photo</p>
+          <div className="relative bg-white dark:bg-gray-800 rounded-t-3xl px-5 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="w-10 h-1 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto mb-5" />
+            <p className="text-[15px] font-semibold text-gray-900 dark:text-white mb-4 text-center">{t(language, 'addPhoto')}</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
@@ -807,14 +810,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                     else fileInputAfterCameraRef.current?.click();
                   }, 100);
                 }}
-                className="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-4 active:bg-gray-100 transition-colors"
+                className="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 rounded-2xl px-4 py-4 active:bg-gray-100 dark:active:bg-gray-600 transition-colors"
               >
                 <div className="bg-[#14ae5c]/10 rounded-xl p-2.5">
                   <Camera className="size-5 text-[#14ae5c]" />
                 </div>
                 <div className="text-left">
-                  <p className="text-[14px] font-semibold text-gray-900">Take a Photo</p>
-                  <p className="text-[12px] text-gray-400">Use your camera</p>
+                  <p className="text-[14px] font-semibold text-gray-900 dark:text-white">{t(language, 'takeAPhoto')}</p>
+                  <p className="text-[12px] text-gray-400">{t(language, 'useCamera')}</p>
                 </div>
               </button>
               <button
@@ -825,14 +828,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                     else fileInputAfterRef.current?.click();
                   }, 100);
                 }}
-                className="flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-4 active:bg-gray-100 transition-colors"
+                className="flex items-center gap-4 bg-gray-50 dark:bg-gray-700 rounded-2xl px-4 py-4 active:bg-gray-100 dark:active:bg-gray-600 transition-colors"
               >
-                <div className="bg-blue-50 rounded-xl p-2.5">
+                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-2.5">
                   <ImageIcon className="size-5 text-blue-500" />
                 </div>
                 <div className="text-left">
-                  <p className="text-[14px] font-semibold text-gray-900">Upload from Library</p>
-                  <p className="text-[12px] text-gray-400">Choose an existing photo</p>
+                  <p className="text-[14px] font-semibold text-gray-900 dark:text-white">{t(language, 'uploadFromLibrary')}</p>
+                  <p className="text-[12px] text-gray-400">{t(language, 'chooseExisting')}</p>
                 </div>
               </button>
             </div>

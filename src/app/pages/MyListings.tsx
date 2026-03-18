@@ -4,9 +4,12 @@ import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import { apiFetch } from '../lib/api';
 import { ArrowLeft, Package, MessageCircle, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 export default function MyListings() {
   const navigate = useNavigate();
+  const { language } = useApp();
   const [activeTab, setActiveTab] = useState<'posts' | 'matches'>('posts');
   const [offers, setOffers] = useState<any[]>([]);
   const [needs, setNeeds] = useState<any[]>([]);
@@ -29,24 +32,24 @@ export default function MyListings() {
   return (
     <MobileContainer>
       <PageTransition>
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         <div className="px-5 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center h-14 gap-3">
-            <button onClick={() => navigate(-1)} className="text-gray-800"><ArrowLeft className="size-6" /></button>
-            <h1 className="text-[18px] font-semibold text-gray-900 flex-1 font-[Poppins,sans-serif]">My Listings</h1>
+            <button onClick={() => navigate(-1)} className="text-gray-800 dark:text-gray-200"><ArrowLeft className="size-6" /></button>
+            <h1 className="text-[18px] font-semibold text-gray-900 dark:text-white flex-1 font-[Poppins,sans-serif]">{t(language, 'myListingsTitle')}</h1>
           </div>
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`flex-1 py-2 rounded-lg text-[13px] font-medium transition-all ${activeTab === 'posts' ? 'bg-[#14ae5c] text-white shadow-sm' : 'text-gray-500'}`}
+              className={`flex-1 py-2 rounded-lg text-[13px] font-medium transition-all ${activeTab === 'posts' ? 'bg-[#14ae5c] text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
             >
-              My Posts
+              {t(language, 'myPosts')}
             </button>
             <button
               onClick={() => setActiveTab('matches')}
-              className={`flex-1 py-2 rounded-lg text-[13px] font-medium transition-all ${activeTab === 'matches' ? 'bg-[#14ae5c] text-white shadow-sm' : 'text-gray-500'}`}
+              className={`flex-1 py-2 rounded-lg text-[13px] font-medium transition-all ${activeTab === 'matches' ? 'bg-[#14ae5c] text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
             >
-              My Matches
+              {t(language, 'myMatches')}
             </button>
           </div>
         </div>
@@ -59,8 +62,8 @@ export default function MyListings() {
               {offers.length === 0 && needs.length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="size-12 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400 text-[14px]">No posts yet</p>
-                  <button onClick={() => navigate('/home')} className="mt-3 text-[#14ae5c] text-[13px] font-semibold">Start Sharing</button>
+                  <p className="text-gray-400 text-[14px]">{t(language, 'noPosts')}</p>
+                  <button onClick={() => navigate('/home')} className="mt-3 text-[#14ae5c] text-[13px] font-semibold">{t(language, 'startSharing')}</button>
                 </div>
               ) : (
                 <>
@@ -98,11 +101,11 @@ export default function MyListings() {
               {matches.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageCircle className="size-12 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400 text-[14px]">No matches yet</p>
-                  <p className="text-gray-400 text-[12px] mt-1">Post items to get matched with neighbors</p>
+                  <p className="text-gray-400 text-[14px]">{t(language, 'noMatches')}</p>
+                  <p className="text-gray-400 text-[12px] mt-1">{t(language, 'noMatchesDesc')}</p>
                 </div>
               ) : matches.map((m: any) => (
-                <div key={m.id} className="bg-gray-50 rounded-2xl p-4">
+                <div key={m.id} className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-[14px] font-semibold text-gray-800">{m.offer?.title || 'Exchange'}</p>
@@ -119,7 +122,7 @@ export default function MyListings() {
                       onClick={() => navigate(`/chat/${m.chat_thread_id}`)}
                       className="w-full bg-[#14ae5c] text-white py-2 rounded-xl text-[12px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-1"
                     >
-                      <MessageCircle className="size-4" /> Open Chat
+                      <MessageCircle className="size-4" /> {t(language, 'openChat')}
                     </button>
                   )}
                 </div>

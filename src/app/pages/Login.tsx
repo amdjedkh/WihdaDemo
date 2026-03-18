@@ -4,6 +4,8 @@ import MobileContainer from '../components/MobileContainer';
 import wihdaLogo from "../../assets/wihda_logo.png";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import { API_BASE } from '../lib/api';
 
 export default function Login() {
@@ -16,6 +18,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn } = useAuth();
+  const { language } = useApp();
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -28,7 +31,6 @@ export default function Login() {
 
   const justVerified = (location.state as any)?.verified;
 
-  // Pre-fill email if coming back from signup
   useEffect(() => {
     const state = location.state as any;
     if (state?.email) setEmail(state.email);
@@ -48,7 +50,6 @@ export default function Login() {
 
     if (result.error) {
       if (result.code === 'CONTACT_VERIFICATION_REQUIRED') {
-        // Redirect to OTP page with context
         navigate('/verify-otp', {
           state: {
             contactChannel: result.contactChannel || 'email',
@@ -65,12 +66,12 @@ export default function Login() {
 
   return (
     <MobileContainer>
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
         {/* Top gradient area */}
-        <div className="bg-gradient-to-b from-[#f0faf4] to-white pt-16 pb-8 px-8 flex flex-col items-center relative">
+        <div className="bg-gradient-to-b from-[#f0faf4] to-white dark:from-gray-800 dark:to-gray-900 pt-16 pb-8 px-8 flex flex-col items-center relative">
           <button
             onClick={() => navigate('/admin-login')}
-            className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800/90 text-white text-[11px] font-semibold"
+            className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800/90 dark:bg-gray-700 text-white text-[11px] font-semibold"
           >
             <ShieldCheck className="size-3.5" />
             Admin
@@ -81,13 +82,13 @@ export default function Login() {
 
         {/* Form */}
         <div className="flex-1 px-6 pt-4">
-          <h2 className="text-[24px] font-bold text-gray-900 mb-1 font-[Poppins,sans-serif]">Welcome back</h2>
-          <p className="text-[14px] text-gray-400 mb-8">Sign in to your account</p>
+          <h2 className="text-[24px] font-bold text-gray-900 dark:text-white mb-1 font-[Poppins,sans-serif]">{t(language, 'welcomeBack')}</h2>
+          <p className="text-[14px] text-gray-400 mb-8">{t(language, 'signInToAccount')}</p>
 
           {justVerified && (
             <div className="bg-green-50 border border-green-200 text-green-700 text-[13px] px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
               <CheckCircle2 className="size-4 shrink-0" />
-              Email verified! You can now sign in.
+              {t(language, 'emailVerifiedMsg')}
             </div>
           )}
 
@@ -102,10 +103,10 @@ export default function Login() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder={t(language, 'emailAddress')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-4 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-4 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="email"
               />
             </div>
@@ -114,10 +115,10 @@ export default function Login() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
+                placeholder={t(language, 'passwordLabel')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-12 pr-12 py-3.5 text-[14px] placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl pl-12 pr-12 py-3.5 text-[14px] text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-[#14ae5c] focus:outline-none transition-colors"
                 autoComplete="current-password"
               />
               <button
@@ -135,7 +136,7 @@ export default function Login() {
                 onClick={() => navigate('/forgot-password')}
                 className="text-[13px] text-[#14ae5c] font-medium"
               >
-                Forgot Password?
+                {t(language, 'forgotPassword')}
               </button>
             </div>
 
@@ -148,7 +149,7 @@ export default function Login() {
                 <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Sign In <ArrowRight className="size-5" />
+                  {t(language, 'signIn')} <ArrowRight className="size-5" />
                 </>
               )}
             </button>
@@ -156,15 +157,15 @@ export default function Login() {
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gray-100" />
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
             <span className="text-[12px] text-gray-400">or</span>
-            <div className="flex-1 h-px bg-gray-100" />
+            <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
           </div>
 
           <button
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="w-full border border-gray-200 text-gray-700 py-3 rounded-xl text-[14px] font-medium flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-60"
+            className="w-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl text-[14px] font-medium flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-60"
           >
             {googleLoading ? (
               <div className="size-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
@@ -176,7 +177,7 @@ export default function Login() {
                   <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
                   <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
                 </svg>
-                Continue with Google
+                {t(language, 'continueWithGoogle')}
               </>
             )}
           </button>
@@ -185,19 +186,19 @@ export default function Login() {
             onClick={() => navigate('/home')}
             className="w-full text-gray-400 py-2 text-[13px] active:scale-[0.98] transition-all mt-2"
           >
-            Continue as Guest
+            {t(language, 'continueAsGuest')}
           </button>
         </div>
 
         {/* Bottom signup link */}
         <div className="px-6 pb-10 pt-4 text-center">
-          <p className="text-[14px] text-gray-500">
-            Don't have an account?{' '}
+          <p className="text-[14px] text-gray-500 dark:text-gray-400">
+            {t(language, 'noAccount')}{' '}
             <button
               onClick={() => navigate('/signup')}
               className="text-[#14ae5c] font-semibold"
             >
-              Sign Up
+              {t(language, 'signUp')}
             </button>
           </p>
         </div>
