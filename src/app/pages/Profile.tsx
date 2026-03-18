@@ -26,6 +26,7 @@ import {
   Camera,
   Loader2,
   Leaf,
+  ShieldAlert,
 } from 'lucide-react';
 
 
@@ -185,9 +186,9 @@ export default function Profile() {
                   {!isGuest && user?.verificationStatus !== 'verified' && (
                     <button
                       onClick={() => navigate('/verify-identity')}
-                      className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full font-medium"
+                      className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full font-medium"
                     >
-                      Unverified
+                      <ShieldAlert className="size-3" /> Unverified
                     </button>
                   )}
                 </div>
@@ -405,14 +406,23 @@ function BadgeCard({ badge }: { badge: any }) {
     cleanify_champion: 'bg-emerald-50',
     top_helper: 'bg-purple-50',
   };
+  const iconFallbacks: Record<string, string> = {
+    food_saver: '🍞',
+    active_member: '⚡',
+    citizen_of_month: '🏆',
+    local_giver: '🤝',
+    cleanify_champion: '🌿',
+    top_helper: '💪',
+  };
   const bg = badge.color || bgColors[badge.key] || 'bg-gray-50';
+  const icon = badge.icon || iconFallbacks[badge.key] || '🏅';
   const progress = badge.progress ?? 0;
   const total = badge.requirement_value ?? 1;
   const pct = Math.min(100, Math.round((progress / total) * 100));
 
   return (
     <div className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5 ${!badge.earned ? 'opacity-50' : ''}`}>
-      <span className="text-[24px]">{badge.icon}</span>
+      <span className="text-[24px]">{icon}</span>
       <span className="text-[10px] font-medium text-gray-700 text-center leading-tight">{badge.name}</span>
       {!badge.earned && (
         <div className="w-full bg-black/10 rounded-full h-1 mt-0.5">

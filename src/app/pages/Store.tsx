@@ -245,7 +245,7 @@ export default function Store() {
                     )}
 
                     {/* Icon */}
-                    <div className="text-[40px] mb-3 mt-2">{item.icon}</div>
+                    <div className="text-[40px] mb-3 mt-2">{item.icon || '🎁'}</div>
 
                     {/* Name */}
                     <p className="text-[13px] font-semibold text-gray-800 text-center mb-1 leading-tight">
@@ -346,7 +346,7 @@ export default function Store() {
             {/* Header */}
             <div className="flex items-center gap-3 mb-5">
               <div className="bg-green-50 rounded-2xl p-3 text-[32px] leading-none">
-                {flexyItem.icon}
+                {flexyItem.icon || '🎁'}
               </div>
               <div>
                 <h3 className="text-[17px] font-semibold text-gray-900">{flexyItem.name}</h3>
