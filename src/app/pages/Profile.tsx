@@ -44,7 +44,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<'activity' | 'coins'>('activity');
   const [coinEntries, setCoinEntries] = useState<CoinEntry[]>([]);
   const [loadingCoins, setLoadingCoins] = useState(false);
-  const [cleanifyCount, setCleanifyCount] = useState(0);
+  const [stats, setStats] = useState({ cleanify_count: 0, shared_count: 0, volunteer_count: 0 });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [userBadges, setUserBadges] = useState<any[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
@@ -86,22 +86,13 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      apiFetch('/v1/cleanify/stats')
-        .then(data => {
-          if (data.success) {
-            setCleanifyCount(data.data.user?.total_approved ?? 0);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
       setLoadingBadges(true);
       apiFetch('/v1/me/badges')
         .then(data => {
-          if (data.success) setUserBadges(data.data.badges || []);
+          if (data.success) {
+            setUserBadges(data.data.badges || []);
+            if (data.data.stats) setStats(data.data.stats);
+          }
         })
         .catch(() => {})
         .finally(() => setLoadingBadges(false));
@@ -232,10 +223,10 @@ export default function Profile() {
 
           {/* Stats */}
           <div className="px-5 md:px-8 mb-5">
-            <div className="grid grid-cols-3 md:grid-cols-3 gap-3 md:gap-6">
-              <StatCard icon={Flame} label="Cleanify" value={String(cleanifyCount)} color="text-orange-500" bg="bg-orange-50" />
-              <StatCard icon={Package} label="Shared" value="0" color="text-blue-500" bg="bg-blue-50" />
-              <StatCard icon={Clock} label="Volunteer" value="0h" color="text-purple-500" bg="bg-purple-50" />
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard icon={Flame}   label="Cleanify"  value={String(stats.cleanify_count)}  color="text-orange-500" bg="bg-orange-50" />
+              <StatCard icon={Package} label="Shared"    value={String(stats.shared_count)}    color="text-blue-500"   bg="bg-blue-50" />
+              <StatCard icon={Users}   label="Volunteer" value={String(stats.volunteer_count)} color="text-purple-500" bg="bg-purple-50" />
             </div>
           </div>
 
@@ -273,25 +264,22 @@ export default function Profile() {
           <div className="px-5 md:px-8 mb-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[15px] font-semibold text-gray-800">Badges</h3>
-              <span className="text-[12px] text-gray-400">
+              <button
+                onClick={() => navigate('/my-badges')}
+                className="flex items-center gap-1 text-[12px] text-[#14ae5c] font-medium"
+              >
                 {userBadges.filter(b => b.earned).length}/{userBadges.length}
-              </span>
+                <ChevronRight className="size-3.5" />
+              </button>
             </div>
             {loadingBadges ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="size-6 text-gray-300 animate-spin" />
               </div>
             ) : (
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {(userBadges.length > 0 ? userBadges : [
-                  { key: 'food_saver', name: 'Food Saver', icon: '🍞', color: 'bg-orange-50', earned: false, progress: 0, requirement_value: 1 },
-                  { key: 'active_member', name: 'Active Member', icon: '⚡', color: 'bg-blue-50', earned: false, progress: 0, requirement_value: 5 },
-                  { key: 'citizen_of_month', name: 'Citizen of Month', icon: '🏆', color: 'bg-yellow-50', earned: false, progress: 0, requirement_value: 10 },
-                  { key: 'local_giver', name: 'Local Giver', icon: '🤝', color: 'bg-green-50', earned: false, progress: 0, requirement_value: 3 },
-                  { key: 'cleanify_champion', name: 'Cleanify Champion', icon: '🌿', color: 'bg-emerald-50', earned: false, progress: 0, requirement_value: 5 },
-                  { key: 'top_helper', name: 'Top Helper', icon: '💪', color: 'bg-purple-50', earned: false, progress: 0, requirement_value: 20 },
-                ]).map((badge: any) => (
-                  <BadgeCard key={badge.key || badge.id} badge={badge} />
+              <div className="grid grid-cols-3 gap-3">
+                {userBadges.slice(0, 6).map((badge: any) => (
+                  <BadgeCard key={badge.key} badge={badge} onClick={() => navigate('/my-badges')} />
                 ))}
               </div>
             )}
@@ -397,41 +385,64 @@ function StatCard({ icon: Icon, label, value, color, bg }: {
   );
 }
 
-function BadgeCard({ badge }: { badge: any }) {
-  const bgColors: Record<string, string> = {
-    food_saver: 'bg-orange-50',
-    active_member: 'bg-blue-50',
-    citizen_of_month: 'bg-yellow-50',
-    local_giver: 'bg-green-50',
-    cleanify_champion: 'bg-emerald-50',
-    top_helper: 'bg-purple-50',
-  };
-  const iconFallbacks: Record<string, string> = {
-    food_saver: '🍞',
-    active_member: '⚡',
-    citizen_of_month: '🏆',
-    local_giver: '🤝',
-    cleanify_champion: '🌿',
-    top_helper: '💪',
-  };
-  const bg = badge.color || bgColors[badge.key] || 'bg-gray-50';
-  const icon = badge.icon || iconFallbacks[badge.key] || '🏅';
+export const BADGE_IMAGES: Record<string, string | null> = {
+  food_saver:        null, // add: import imgFoodSaver from '../../assets/FoodSaver.png'
+  local_giver:       null, // add: import imgLocalGiver from '../../assets/LocalGiver.png'
+  active_member:     null, // add: import imgActiveMember from '../../assets/ActiveMember.png'
+  cleanify_champion: null, // add: import imgCleanifyChampion from '../../assets/CleanifyChampion.png'
+  citizen_of_month:  null, // add: import imgCitizenOfMonth from '../../assets/CitizenOfTheMonth.png'
+  top_helper:        null, // add: import imgTopHelper from '../../assets/TopHelper.png'
+};
+
+const BADGE_BG: Record<string, string> = {
+  food_saver:        'bg-orange-100',
+  local_giver:       'bg-green-100',
+  active_member:     'bg-blue-100',
+  cleanify_champion: 'bg-emerald-100',
+  citizen_of_month:  'bg-yellow-100',
+  top_helper:        'bg-purple-100',
+};
+
+const BADGE_EMOJI: Record<string, string> = {
+  food_saver:        '🍞',
+  local_giver:       '🤝',
+  active_member:     '⚡',
+  cleanify_champion: '🌿',
+  citizen_of_month:  '🏆',
+  top_helper:        '💪',
+};
+
+function BadgeCard({ badge, onClick }: { badge: any; onClick?: () => void }) {
   const progress = badge.progress ?? 0;
-  const total = badge.requirement_value ?? 1;
-  const pct = Math.min(100, Math.round((progress / total) * 100));
+  const total    = badge.requirement_value ?? 1;
+  const pct      = Math.min(100, Math.round((progress / total) * 100));
+  const img      = BADGE_IMAGES[badge.key];
+  const bg       = BADGE_BG[badge.key]    || 'bg-gray-100';
+  const emoji    = BADGE_EMOJI[badge.key] || '🏅';
 
   return (
-    <div className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5 ${!badge.earned ? 'opacity-50' : ''}`}>
-      <span className="text-[24px]">{icon}</span>
+    <button
+      onClick={onClick}
+      className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5 w-full active:scale-95 transition-transform ${!badge.earned ? 'opacity-50' : ''}`}
+    >
+      <div className="size-10 flex items-center justify-center">
+        {img
+          ? <img src={img} alt={badge.name} className={`size-10 object-contain ${!badge.earned ? 'grayscale' : ''}`} />
+          : <span className="text-[24px]">{emoji}</span>
+        }
+      </div>
       <span className="text-[10px] font-medium text-gray-700 text-center leading-tight">{badge.name}</span>
       {!badge.earned && (
-        <div className="w-full bg-black/10 rounded-full h-1 mt-0.5">
-          <div className="bg-current h-1 rounded-full transition-all" style={{ width: `${pct}%` }} />
-        </div>
+        <>
+          <div className="w-full bg-black/10 rounded-full h-1 mt-0.5">
+            <div className="bg-[#14ae5c] h-1 rounded-full transition-all" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="text-[9px] text-gray-500">{progress}/{total}</span>
+        </>
       )}
-      {!badge.earned && (
-        <span className="text-[9px] text-gray-500">{progress}/{total}</span>
+      {badge.earned && (
+        <span className="text-[9px] text-[#14ae5c] font-semibold">Earned ✓</span>
       )}
-    </div>
+    </button>
   );
 }
