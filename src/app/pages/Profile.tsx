@@ -277,7 +277,7 @@ export default function Profile() {
                 <Loader2 className="size-6 text-gray-300 animate-spin" />
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {userBadges.slice(0, 6).map((badge: any) => (
                   <BadgeCard key={badge.key} badge={badge} onClick={() => navigate('/my-badges')} />
                 ))}
@@ -385,13 +385,20 @@ function StatCard({ icon: Icon, label, value, color, bg }: {
   );
 }
 
+import imgFoodSaver        from '../../assets/foodsaver.png';
+import imgLocalGiver       from '../../assets/localgiver.png';
+import imgActiveMember     from '../../assets/activemember.png';
+import imgCleanifyChampion from '../../assets/cleanifychampion.png';
+import imgCitizenOfMonth   from '../../assets/citizenofthemonth.png';
+import imgTopHelper        from '../../assets/tophelper.png';
+
 export const BADGE_IMAGES: Record<string, string | null> = {
-  food_saver:        null, // add: import imgFoodSaver from '../../assets/FoodSaver.png'
-  local_giver:       null, // add: import imgLocalGiver from '../../assets/LocalGiver.png'
-  active_member:     null, // add: import imgActiveMember from '../../assets/ActiveMember.png'
-  cleanify_champion: null, // add: import imgCleanifyChampion from '../../assets/CleanifyChampion.png'
-  citizen_of_month:  null, // add: import imgCitizenOfMonth from '../../assets/CitizenOfTheMonth.png'
-  top_helper:        null, // add: import imgTopHelper from '../../assets/TopHelper.png'
+  food_saver:        imgFoodSaver,
+  local_giver:       imgLocalGiver,
+  active_member:     imgActiveMember,
+  cleanify_champion: imgCleanifyChampion,
+  citizen_of_month:  imgCitizenOfMonth,
+  top_helper:        imgTopHelper,
 };
 
 const BADGE_BG: Record<string, string> = {
@@ -425,10 +432,10 @@ function BadgeCard({ badge, onClick }: { badge: any; onClick?: () => void }) {
       onClick={onClick}
       className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5 w-full active:scale-95 transition-transform ${!badge.earned ? 'opacity-50' : ''}`}
     >
-      <div className="size-10 flex items-center justify-center">
+      <div className="size-16 flex items-center justify-center">
         {img
-          ? <img src={img} alt={badge.name} className={`size-10 object-contain ${!badge.earned ? 'grayscale' : ''}`} />
-          : <span className="text-[24px]">{emoji}</span>
+          ? <img src={img} alt={badge.name} className={`size-16 object-contain ${!badge.earned ? 'grayscale' : ''}`} />
+          : <span className="text-[36px]">{emoji}</span>
         }
       </div>
       <span className="text-[10px] font-medium text-gray-700 text-center leading-tight">{badge.name}</span>

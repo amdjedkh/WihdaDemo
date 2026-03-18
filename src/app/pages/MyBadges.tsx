@@ -53,8 +53,8 @@ function BadgeIcon({
 }) {
   const img   = BADGE_IMAGES[badgeKey];
   const emoji = BADGE_EMOJI[badgeKey] || '🏅';
-  const sizeClass = size === 'lg' ? 'size-20' : size === 'md' ? 'size-12' : 'size-8';
-  const textSize  = size === 'lg' ? 'text-[48px]' : size === 'md' ? 'text-[28px]' : 'text-[20px]';
+  const sizeClass = size === 'lg' ? 'size-24' : size === 'md' ? 'size-16' : 'size-10';
+  const textSize  = size === 'lg' ? 'text-[56px]' : size === 'md' ? 'text-[36px]' : 'text-[22px]';
 
   if (img) {
     return (
