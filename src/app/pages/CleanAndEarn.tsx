@@ -31,7 +31,7 @@ type CleaningStep = 'checking' | 'intro' | 'active-exists' | 'upload-before' | '
 
 export default function CleanAndEarn() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [step, setStep] = useState<CleaningStep>('checking');
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [activeSubmission, setActiveSubmission] = useState<any | null>(null);
@@ -248,8 +248,17 @@ export default function CleanAndEarn() {
       reader.onloadend = () => setAfterImage(reader.result as string);
       reader.readAsDataURL(file);
 
-      // Cancel the reminder notification since they completed the after photo
+      // Cancel the 25-min reminder and schedule a "result ready" notification
       LocalNotifications.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
+      LocalNotifications.schedule({
+        notifications: [{
+          id: 1002,
+          title: 'Clean & Earn Result Ready 🎉',
+          body: 'Your submission has been reviewed. Tap to see the result!',
+          schedule: { at: new Date(Date.now() + 2 * 60 * 1000) }, // fires in ~2 min
+          extra: { submissionId },
+        }],
+      }).catch(() => {});
       setStep('validating');
       pollSubmissionStatus();
     } catch (err: any) {
@@ -277,12 +286,16 @@ export default function CleanAndEarn() {
         const status = submission.status;
 
         if (status === 'approved') {
-          setCoinsEarned(submission.coins_awarded ?? 150);
+          const coins = submission.coins_awarded ?? 150;
+          setCoinsEarned(coins);
+          LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
           setStep('approved');
-          toast('Approved!', { description: `You earned ${submission.coins_awarded ?? 150} coins!` });
+          refreshProfile(); // sync coins balance across the app
+          toast('Approved!', { description: `You earned ${coins} coins!` });
           return;
         }
         if (status === 'rejected') {
+          LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
           setStep('rejected');
           return;
         }
