@@ -90,7 +90,7 @@ export default function BottomNav() {
       )}
 
       {/* Nav Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),var(--sab,0px))]">
         <div className="flex items-center justify-around px-2 h-[64px] md:h-[72px] max-w-3xl mx-auto">
           {navItems.map((item) => {
             if (item.path === '__fab__') {
