@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import imgWihdaTextLogo1 from "figma:asset/ee118e5efe643d9ee6880fd61bb3d74d5253e1aa.png";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../lib/api';
 
@@ -67,7 +67,14 @@ export default function Login() {
     <MobileContainer>
       <div className="flex flex-col size-full bg-white">
         {/* Top gradient area */}
-        <div className="bg-gradient-to-b from-[#f0faf4] to-white pt-16 pb-8 px-8 flex flex-col items-center">
+        <div className="bg-gradient-to-b from-[#f0faf4] to-white pt-16 pb-8 px-8 flex flex-col items-center relative">
+          <button
+            onClick={() => navigate('/admin-login')}
+            className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800/90 text-white text-[11px] font-semibold"
+          >
+            <ShieldCheck className="size-3.5" />
+            Admin
+          </button>
           <img src={imgWihdaTextLogo1} alt="Wihda" className="w-[180px] object-contain mb-4" />
           <p className="text-gray-400 text-[13px] tracking-widest">CONNECTING NEIGHBORS</p>
         </div>

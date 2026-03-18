@@ -29,11 +29,14 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import CleanifyHistory from "./pages/CleanifyHistory";
 import CleanifyResult from "./pages/CleanifyResult";
+import AdminLogin from "./pages/AdminLogin";
+import AdminPanel from "./pages/AdminPanel";
 
 let _router: ReturnType<typeof createBrowserRouter> | null = null;
 
 export function getRouter() {
   if (!_router) {
+    const basename = window.location.pathname.startsWith('/en') ? '/en' : '/';
     _router = createBrowserRouter([
       {
         path: "/",
@@ -42,6 +45,14 @@ export function getRouter() {
           {
             index: true,
             Component: SplashPage,
+          },
+          {
+            path: "admin-login",
+            Component: AdminLogin,
+          },
+          {
+            path: "admin-panel",
+            Component: AdminPanel,
           },
           {
             path: "login",
@@ -157,7 +168,7 @@ export function getRouter() {
           },
         ],
       },
-    ]);
+    ], { basename });
   }
   return _router;
 }
