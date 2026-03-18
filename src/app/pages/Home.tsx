@@ -360,9 +360,7 @@ export default function Home() {
                             </div>
                             {campaign.coin_reward > 0 && (
                               <div className="flex items-center gap-1 text-[#f0a326] text-[11px] font-semibold ml-auto">
-                                <div className="size-[14px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-                                  <span className="text-[6px] font-bold">$</span>
-                                </div>
+                                <span className="text-[12px] leading-none">🪙</span>
                                 {campaign.coin_reward}
                               </div>
                             )}
@@ -426,9 +424,7 @@ function RecentPostCard({ name, item, time, coins, image }: {
           <p className="text-[11px] text-gray-400">{name} &middot; {time}</p>
           {coins > 0 && (
             <div className="flex items-center gap-1 text-[#f0a326] text-[11px] font-semibold">
-              <div className="size-[12px] rounded-full border border-[#f0a326] flex items-center justify-center">
-                <span className="text-[6px] font-bold">$</span>
-              </div>
+              <span className="text-[11px] leading-none">🪙</span>
               {coins}
             </div>
           )}

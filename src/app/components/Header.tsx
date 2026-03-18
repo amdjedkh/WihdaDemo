@@ -67,9 +67,7 @@ export default function Header({
           <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">{title}</h1>
         </div>
         <div className="flex items-center gap-2 bg-[#fff9e6] px-3 py-1.5 rounded-full">
-          <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-            <span className="text-[8px] font-bold text-[#f0a326]">$</span>
-          </div>
+          <span className="text-[14px] leading-none">🪙</span>
           <span className="text-[13px] font-semibold text-[#f0a326]">{coinsBalance}</span>
         </div>
       </div>
@@ -86,9 +84,7 @@ export default function Header({
               <ShoppingBag className="size-5" />
             </button>
             <div className="flex items-center gap-1.5 bg-[#fff9e6] px-2.5 py-1.5 rounded-full">
-              <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-                <span className="text-[7px] font-bold text-[#f0a326]">$</span>
-              </div>
+              <span className="text-[14px] leading-none">🪙</span>
               <span className="text-[13px] md:text-[15px] font-semibold text-[#f0a326]">{coinsBalance}</span>
             </div>
           </div>

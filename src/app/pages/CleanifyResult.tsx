@@ -34,7 +34,7 @@ export default function CleanifyResult() {
       .then((data) => {
         if (data.success) {
           setSubmission(data.data);
-          if (data.data.status === 'approved') refreshProfile();
+          if (data.data.status === 'approved') setTimeout(() => refreshProfile(), 500);
         } else {
           setError('Submission not found');
         }
@@ -121,7 +121,7 @@ export default function CleanifyResult() {
                     <div className="bg-gradient-to-br from-[#fff9e6] to-[#fff3cc] rounded-2xl p-6 w-full text-center mb-6">
                       <p className="text-[12px] text-gray-500 mb-2">Coins Earned</p>
                       <div className="flex items-center justify-center gap-2">
-                        <Award className="size-7 text-[#f0a326]" />
+                        <span className="text-[32px] leading-none">🪙</span>
                         <span className="text-[40px] font-bold text-[#f0a326]">{submission.coins_awarded}</span>
                       </div>
                     </div>

@@ -290,7 +290,7 @@ export default function CleanAndEarn() {
           setCoinsEarned(coins);
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
           setStep('approved');
-          refreshProfile();
+          setTimeout(() => refreshProfile(), 1500); // slight delay ensures coin entry is committed
           toast('Approved!', { description: `You earned ${coins} coins!` });
           return;
         }
@@ -719,9 +719,7 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-gradient-to-br from-[#fff9e6] to-[#fff3cc] rounded-2xl p-6 w-full text-center mb-6">
                 <p className="text-[12px] text-gray-500 mb-2">Coins Earned</p>
                 <div className="flex items-center justify-center gap-2">
-                  <div className="size-8 rounded-full border-2 border-[#f0a326] flex items-center justify-center">
-                    <span className="text-[12px] font-bold text-[#f0a326]">$</span>
-                  </div>
+                  <span className="text-[32px] leading-none">🪙</span>
                   <span className="text-[40px] font-bold text-[#f0a326]">{coinsEarned}</span>
                 </div>
               </div>

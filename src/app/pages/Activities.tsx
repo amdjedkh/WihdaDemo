@@ -210,9 +210,7 @@ export default function Activities() {
                             </button>
                             {campaign.coin_reward > 0 && (
                               <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
-                                <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-                                  <span className="text-[7px] font-bold">$</span>
-                                </div>
+                                <span className="text-[14px] leading-none">🪙</span>
                                 {campaign.coin_reward}
                               </div>
                             )}
