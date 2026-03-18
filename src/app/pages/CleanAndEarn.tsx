@@ -275,7 +275,7 @@ export default function CleanAndEarn() {
     if (!submissionId) return;
 
     let attempts = 0;
-    const maxAttempts = 20; // poll for up to ~60 seconds
+    const maxAttempts = 60; // poll for up to ~3 minutes
 
     const poll = async () => {
       try {
@@ -290,7 +290,7 @@ export default function CleanAndEarn() {
           setCoinsEarned(coins);
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
           setStep('approved');
-          refreshProfile(); // sync coins balance across the app
+          refreshProfile();
           toast('Approved!', { description: `You earned ${coins} coins!` });
           return;
         }
@@ -299,28 +299,22 @@ export default function CleanAndEarn() {
           setStep('rejected');
           return;
         }
-        if (status === 'pending_review') {
-          // AI still processing; show pending state
-          setStep('pending-review');
-          return;
-        }
 
-        // Still validating — keep polling
+        // pending_review or still queued — show waiting UI but keep polling
+        setStep('pending-review');
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 3000);
-        } else {
-          setStep('pending-review');
+          setTimeout(poll, 5000);
         }
+        // after maxAttempts the screen stays on pending-review; user will get notification
       } catch {
         attempts++;
         if (attempts < maxAttempts) setTimeout(poll, 5000);
-        else setStep('pending-review');
       }
     };
 
     setTimeout(poll, 3000);
-  }, [submissionId]);
+  }, [submissionId, refreshProfile]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

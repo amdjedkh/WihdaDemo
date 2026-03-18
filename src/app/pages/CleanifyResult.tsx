@@ -4,6 +4,7 @@ import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import SwipeBack from '../components/SwipeBack';
 import { apiFetch, API_BASE } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, Loader2, RotateCcw, Award } from 'lucide-react';
 
 interface SubmissionDetail {
@@ -22,6 +23,7 @@ interface SubmissionDetail {
 export default function CleanifyResult() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { refreshProfile } = useAuth();
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,8 +32,12 @@ export default function CleanifyResult() {
     if (!id) return;
     apiFetch(`/v1/cleanify/submissions/${id}`)
       .then((data) => {
-        if (data.success) setSubmission(data.data);
-        else setError('Submission not found');
+        if (data.success) {
+          setSubmission(data.data);
+          if (data.data.status === 'approved') refreshProfile();
+        } else {
+          setError('Submission not found');
+        }
       })
       .catch(() => setError('Failed to load submission'))
       .finally(() => setLoading(false));
