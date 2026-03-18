@@ -3,6 +3,7 @@ import { RouterProvider } from 'react-router';
 import { Toaster } from 'sonner';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { apiFetch } from './lib/api';
 import { getRouter } from './routes';
@@ -11,6 +12,13 @@ export default function App() {
   const router = getRouter();
 
   useEffect(() => {
+    // Status bar — transparent on iOS, solid white on Android
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#ffffff' }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+    }
+
     // Local notifications (cleanify)
     LocalNotifications.requestPermissions().catch(() => {});
     const localListenerPromise = LocalNotifications.addListener(
