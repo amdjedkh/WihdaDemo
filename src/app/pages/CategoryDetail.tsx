@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Plus,
   Clock,
-  MapPin,
   MessageCircle,
   Loader2,
   Heart,
@@ -22,6 +21,7 @@ import {
   HeartHandshake,
   HelpCircle,
   ArrowLeftRight,
+  Trash2,
 } from 'lucide-react';
 
 type CatMeta = {
@@ -68,7 +68,7 @@ export default function CategoryDetail() {
   const meta = categoryMeta[categoryId || ''] || defaultMeta;
   const isLeftovers = categoryId === 'leftovers';
 
-  useEffect(() => {
+  const loadData = () => {
     if (!isLeftovers) { setLoading(false); return; }
     setLoading(true);
     Promise.all([
@@ -78,6 +78,10 @@ export default function CategoryDetail() {
       setOffers(offersRes?.data?.offers || []);
       setNeeds(needsRes?.data?.needs || []);
     }).finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadData();
   }, [isLeftovers]);
 
   useEffect(() => {
@@ -101,6 +105,37 @@ export default function CategoryDetail() {
         });
       }
     } catch {}
+  };
+
+  const handleRequest = async (offerId: string) => {
+    try {
+      const data = await apiFetch(`/v1/leftovers/offers/${offerId}/request`, { method: 'POST' });
+      if (data.success) {
+        navigate(`/chat/${data.data.thread_id}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to start chat');
+    }
+  };
+
+  const handleDeleteOffer = async (offerId: string) => {
+    try {
+      await apiFetch(`/v1/leftovers/offers/${offerId}`, { method: 'DELETE' });
+      toast.success('Offer deleted');
+      setOffers(prev => prev.filter(o => o.id !== offerId));
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete');
+    }
+  };
+
+  const handleDeleteNeed = async (needId: string) => {
+    try {
+      await apiFetch(`/v1/leftovers/needs/${needId}`, { method: 'DELETE' });
+      toast.success('Post deleted');
+      setNeeds(prev => prev.filter(n => n.id !== needId));
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete');
+    }
   };
 
   const visibleOffers = showFavoritesOnly ? offers.filter(o => favorites.has(o.id)) : offers;
@@ -188,6 +223,9 @@ export default function CategoryDetail() {
                     navigate={navigate}
                     isFavorited={favorites.has(offer.id)}
                     onFavorite={() => toggleFavorite(offer.id)}
+                    isOwner={user?.id === offer.user_id}
+                    onRequest={() => handleRequest(offer.id)}
+                    onDelete={() => handleDeleteOffer(offer.id)}
                   />
                 ))}
               </div>
@@ -205,7 +243,13 @@ export default function CategoryDetail() {
           ) : visibleNeeds.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {visibleNeeds.map(need => (
-                <RequestCard key={need.id} post={need} navigate={navigate} />
+                <RequestCard
+                  key={need.id}
+                  post={need}
+                  navigate={navigate}
+                  isOwner={user?.id === need.user_id}
+                  onDelete={() => handleDeleteNeed(need.id)}
+                />
               ))}
             </div>
           ) : (
@@ -227,8 +271,14 @@ export default function CategoryDetail() {
   );
 }
 
-function PostCard({ post, navigate, isFavorited, onFavorite }: {
-  post: any; navigate: any; isFavorited: boolean; onFavorite: () => void;
+function PostCard({ post, navigate, isFavorited, onFavorite, isOwner, onRequest, onDelete }: {
+  post: any;
+  navigate: any;
+  isFavorited: boolean;
+  onFavorite: () => void;
+  isOwner: boolean;
+  onRequest: () => void;
+  onDelete: () => void;
 }) {
   const userName = post.user?.display_name || 'Neighbor';
   const timeAgo = getRelativeTime(post.created_at);
@@ -236,7 +286,17 @@ function PostCard({ post, navigate, isFavorited, onFavorite }: {
   const coins = 100;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+    <div
+      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm cursor-pointer"
+      onClick={() => navigate(`/leftovers/${post.id}`)}
+    >
+      {/* Image */}
+      {post.image_url && (
+        <div className="w-full h-[140px] overflow-hidden">
+          <img src={post.image_url} alt={post.title} className="w-full h-full object-cover" />
+        </div>
+      )}
+
       <div className="flex items-center gap-3 p-4 pb-2">
         <div className="size-10 rounded-full bg-[#14ae5c]/10 flex items-center justify-center">
           <span className="text-[16px] font-bold text-[#14ae5c]">{userName[0]?.toUpperCase()}</span>
@@ -247,12 +307,14 @@ function PostCard({ post, navigate, isFavorited, onFavorite }: {
             <span className="flex items-center gap-0.5"><Clock className="size-3" />{timeAgo}</span>
           </div>
         </div>
-        <button
-          onClick={e => { e.stopPropagation(); onFavorite(); }}
-          className="p-1.5 rounded-full transition-colors active:scale-90"
-        >
-          <Heart className={`size-4 transition-colors ${isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} />
-        </button>
+        {!isOwner && (
+          <button
+            onClick={e => { e.stopPropagation(); onFavorite(); }}
+            className="p-1.5 rounded-full transition-colors active:scale-90"
+          >
+            <Heart className={`size-4 transition-colors ${isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} />
+          </button>
+        )}
       </div>
 
       <div className="px-4 pb-2">
@@ -266,12 +328,24 @@ function PostCard({ post, navigate, isFavorited, onFavorite }: {
       </div>
 
       <div className="px-4 pb-4 pt-2 flex items-center justify-between">
-        <button
-          onClick={() => navigate(`/chat/${post.id}`)}
-          className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform"
-        >
-          <MessageCircle className="size-3.5" /> Request
-        </button>
+        {isOwner ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Your post</span>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 text-red-400 active:scale-90 transition-transform"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={e => { e.stopPropagation(); onRequest(); }}
+            className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform"
+          >
+            <MessageCircle className="size-3.5" /> Request
+          </button>
+        )}
         <div className="flex items-center gap-1.5 text-[#f0a326] font-semibold text-[13px]">
           <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
             <span className="text-[7px] font-bold">$</span>
@@ -283,10 +357,14 @@ function PostCard({ post, navigate, isFavorited, onFavorite }: {
   );
 }
 
-function RequestCard({ post, navigate }: { post: any; navigate: any }) {
+function RequestCard({ post, navigate, isOwner, onDelete }: {
+  post: any;
+  navigate: any;
+  isOwner: boolean;
+  onDelete: () => void;
+}) {
   const userName = post.user?.display_name || 'Neighbor';
   const timeAgo = getRelativeTime(post.created_at);
-  const portions = post.survey?.portions;
   const urgencyColors: Record<string, string> = {
     urgent: 'text-red-500', high: 'text-orange-500', normal: 'text-gray-500', low: 'text-gray-400',
   };
@@ -304,15 +382,27 @@ function RequestCard({ post, navigate }: { post: any; navigate: any }) {
           </p>
         </div>
       </div>
-      {portions && <p className="text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-1">Needs {portions} portion{portions > 1 ? 's' : ''}</p>}
-      {post.survey?.notes && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3">{post.survey.notes}</p>}
+      {post.title && <p className="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-1">{post.title}</p>}
+      {post.description && <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-3">{post.description}</p>}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate(`/chat/${post.id}`)}
-          className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition-transform"
-        >
-          Offer to Help
-        </button>
+        {isOwner ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">Your request</span>
+            <button
+              onClick={onDelete}
+              className="p-1.5 text-red-400 active:scale-90 transition-transform"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate('/post-item/leftovers')}
+            className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition-transform"
+          >
+            Offer to Help
+          </button>
+        )}
         <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
           <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
             <span className="text-[7px] font-bold">$</span>

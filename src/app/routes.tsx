@@ -36,6 +36,7 @@ import ActivityJoin from "./pages/ActivityJoin";
 import Settings from "./pages/Settings";
 import ChangeEmail from "./pages/ChangeEmail";
 import ChangePassword from "./pages/ChangePassword";
+import LeftoverDetail from "./pages/LeftoverDetail";
 
 let _router: ReturnType<typeof createBrowserRouter> | null = null;
 
@@ -138,6 +139,10 @@ export function getRouter() {
           {
             path: "leftovers",
             Component: Leftovers,
+          },
+          {
+            path: "leftovers/:id",
+            Component: LeftoverDetail,
           },
           {
             path: "category/:categoryId",
