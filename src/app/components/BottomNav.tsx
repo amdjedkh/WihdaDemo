@@ -31,11 +31,11 @@ export default function BottomNav() {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const navItems = [
-    { path: '/profile',    icon: User,     label: t(language, 'profile')    },
-    { path: '/store',      icon: Store,    label: t(language, 'store')      },
-    { path: '__fab__',     icon: Plus,     label: 'Add'                     },
-    { path: '/activities', icon: Activity, label: t(language, 'activities') },
     { path: '/home',       icon: Home,     label: t(language, 'home')       },
+    { path: '/activities', icon: Activity, label: t(language, 'activities') },
+    { path: '__fab__',     icon: Plus,     label: 'Add'                     },
+    { path: '/store',      icon: Store,    label: t(language, 'store')      },
+    { path: '/profile',    icon: User,     label: t(language, 'profile')    },
   ];
 
   return (
