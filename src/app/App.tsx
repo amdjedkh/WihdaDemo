@@ -12,11 +12,10 @@ export default function App() {
   const router = getRouter();
 
   useEffect(() => {
-    // Status bar — transparent on iOS, solid white on Android
+    // Status bar — transparent, draws behind app content (edge-to-edge)
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#ffffff' }).catch(() => {});
-      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
     }
 
     // Local notifications (cleanify)
