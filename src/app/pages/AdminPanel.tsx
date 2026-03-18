@@ -149,8 +149,10 @@ function ActivitiesTab() {
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    title: '', description: '', organizer: '', location: '',
-    start_dt: '', end_dt: '', url: '', image_url: '',
+    title: '', subtitle: '', description: '', organizer: '',
+    organizer_logo: '', location: '',
+    start_dt: '', end_dt: '', url: '',
+    image1: '', image2: '', image3: '',
     contact_phone: '', contact_email: '', coin_reward: '50',
   });
 
@@ -170,17 +172,27 @@ function ActivitiesTab() {
     if (!form.title || !form.start_dt) return;
     setSubmitting(true);
     try {
+      const images = [form.image1, form.image2, form.image3].filter(Boolean);
       await apiFetch('/v1/admin/campaigns', {
         method: 'POST',
         body: JSON.stringify({
-          ...form,
-          coin_reward: parseInt(form.coin_reward) || 50,
-          contact_phone: form.contact_phone || null,
-          contact_email: form.contact_email || null,
+          title:          form.title,
+          subtitle:       form.subtitle       || null,
+          description:    form.description    || null,
+          organizer:      form.organizer       || null,
+          organizer_logo: form.organizer_logo  || null,
+          location:       form.location        || null,
+          start_dt:       form.start_dt,
+          end_dt:         form.end_dt          || null,
+          url:            form.url             || null,
+          images:         images.length > 0 ? images : undefined,
+          contact_phone:  form.contact_phone   || null,
+          contact_email:  form.contact_email   || null,
+          coin_reward:    parseInt(form.coin_reward) || 50,
         }),
       });
       setShowForm(false);
-      setForm({ title: '', description: '', organizer: '', location: '', start_dt: '', end_dt: '', url: '', image_url: '', contact_phone: '', contact_email: '', coin_reward: '50' });
+      setForm({ title: '', subtitle: '', description: '', organizer: '', organizer_logo: '', location: '', start_dt: '', end_dt: '', url: '', image1: '', image2: '', image3: '', contact_phone: '', contact_email: '', coin_reward: '50' });
       load();
     } catch (err: any) {
       alert(err.message || 'Failed to create activity');
@@ -266,6 +278,7 @@ function ActivitiesTab() {
 
           <form onSubmit={handleCreate} className="flex-1 overflow-y-auto px-5 space-y-4 pb-6 pt-2">
             {field('title', 'Title', 'text', true)}
+            {field('subtitle', 'Subtitle')}
             <div>
               <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">Description</label>
               <textarea
@@ -276,10 +289,16 @@ function ActivitiesTab() {
               />
             </div>
             {field('organizer', 'Organizer')}
+            {field('organizer_logo', 'Organizer Logo URL')}
             {field('location', 'Location')}
             {field('start_dt', 'Start Date & Time', 'datetime-local', true)}
             {field('end_dt', 'End Date & Time', 'datetime-local')}
-            {field('image_url', 'Image URL')}
+            <div className="space-y-2">
+              <label className="text-gray-400 text-[11px] uppercase tracking-wider block">Images (up to 3)</label>
+              {field('image1', 'Image 1 URL')}
+              {field('image2', 'Image 2 URL')}
+              {field('image3', 'Image 3 URL')}
+            </div>
             {field('url', 'Event URL')}
             {field('contact_phone', 'Contact Phone')}
             {field('contact_email', 'Contact Email', 'email')}

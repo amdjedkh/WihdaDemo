@@ -31,6 +31,8 @@ import CleanifyHistory from "./pages/CleanifyHistory";
 import CleanifyResult from "./pages/CleanifyResult";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
+import ActivityDetail from "./pages/ActivityDetail";
+import ActivityJoin from "./pages/ActivityJoin";
 
 let _router: ReturnType<typeof createBrowserRouter> | null = null;
 
@@ -81,6 +83,14 @@ export function getRouter() {
           {
             path: "activities",
             Component: Activities,
+          },
+          {
+            path: "activity/:id",
+            Component: ActivityDetail,
+          },
+          {
+            path: "activity/:id/join",
+            Component: ActivityJoin,
           },
           {
             path: "clean-earn",
