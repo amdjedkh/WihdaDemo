@@ -282,15 +282,30 @@ export default function Settings() {
           {/* Language */}
           <SectionHeader label={T('sectionLanguage')} />
           <Row>
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <Globe className="size-5 text-gray-500" />
-                <div>
-                  <p className="text-[14px] font-medium text-gray-900">{T('arabicLabel')}</p>
-                  <p className="text-[12px] text-gray-400">{isArabic ? T('arabicActive') : T('arabicDesc')}</p>
-                </div>
-              </div>
-              <Toggle checked={isArabic} onChange={handleLanguageToggle} />
+            <div className="p-3 flex gap-3">
+              <button
+                onClick={() => handleLanguageToggle(false)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all ${
+                  !isArabic
+                    ? 'bg-[#14ae5c] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                <Globe className="size-4" />
+                {T('langEnglish')}
+              </button>
+              <button
+                onClick={() => handleLanguageToggle(true)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold transition-all ${
+                  isArabic
+                    ? 'bg-[#14ae5c] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+                style={{ fontFamily: "'Tajawal', sans-serif" }}
+              >
+                <Globe className="size-4" />
+                العربية
+              </button>
             </div>
           </Row>
 

@@ -10,6 +10,8 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import babyClothesImg from 'figma:asset/6ca96903cfde7315c572f9598645ca9fc8a8e6ca.png';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import {
   Utensils,
   Package,
@@ -27,8 +29,8 @@ import {
 const categories = [
   {
     id: 'leftovers',
-    title: 'Leftovers',
-    subtitle: 'Share extra food',
+    titleKey: 'catLeftovers' as const,
+    subKey: 'catLeftoversSub' as const,
     icon: Utensils,
     gradient: 'from-orange-400 to-orange-500',
     bg: 'bg-orange-50',
@@ -36,8 +38,8 @@ const categories = [
   },
   {
     id: 'old-items',
-    title: 'Old Items',
-    subtitle: 'Give or reuse',
+    titleKey: 'catOldItems' as const,
+    subKey: 'catOldItemsSub' as const,
     icon: Package,
     gradient: 'from-blue-400 to-blue-500',
     bg: 'bg-blue-50',
@@ -45,8 +47,8 @@ const categories = [
   },
   {
     id: 'borrow',
-    title: 'Borrow',
-    subtitle: 'Lend or borrow',
+    titleKey: 'catBorrow' as const,
+    subKey: 'catBorrowSub' as const,
     icon: Handshake,
     gradient: 'from-purple-400 to-purple-500',
     bg: 'bg-purple-50',
@@ -54,8 +56,8 @@ const categories = [
   },
   {
     id: 'offer-help',
-    title: 'Offer Help',
-    subtitle: 'Support neighbors',
+    titleKey: 'catOfferHelp' as const,
+    subKey: 'catOfferHelpSub' as const,
     icon: HeartHandshake,
     gradient: 'from-green-400 to-green-500',
     bg: 'bg-green-50',
@@ -63,8 +65,8 @@ const categories = [
   },
   {
     id: 'ask-help',
-    title: 'Ask Help',
-    subtitle: 'Request support',
+    titleKey: 'catAskHelp' as const,
+    subKey: 'catAskHelpSub' as const,
     icon: HelpCircle,
     gradient: 'from-rose-400 to-rose-500',
     bg: 'bg-rose-50',
@@ -72,8 +74,8 @@ const categories = [
   },
   {
     id: 'exchange',
-    title: 'Exchange',
-    subtitle: 'Swap items',
+    titleKey: 'catExchange' as const,
+    subKey: 'catExchangeSub' as const,
     icon: ArrowLeftRight,
     gradient: 'from-teal-400 to-teal-500',
     bg: 'bg-teal-50',
@@ -106,6 +108,8 @@ export default function Home() {
   const [showVerifyBanner, setShowVerifyBanner] = useState(false);
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
+  const { language } = useApp();
+  const T = (key: Parameters<typeof t>[1]) => t(language, key);
 
   useEffect(() => {
     if (user && user.verificationStatus !== 'verified' && !sessionStorage.getItem('wihda_verify_skipped')) {
@@ -163,7 +167,7 @@ export default function Home() {
                     : 'text-gray-500'
                 }`}
               >
-                My Neighbor
+                {T('myNeighbor')}
               </button>
               <button
                 onClick={() => setActiveTab('neighborhood')}
@@ -173,7 +177,7 @@ export default function Home() {
                     : 'text-gray-500'
                 }`}
               >
-                My Neighborhood
+                {T('myNeighborhood')}
               </button>
             </div>
           </div>
@@ -184,8 +188,8 @@ export default function Home() {
               <div className="mx-4 mb-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-white text-[14px] font-semibold mb-0.5">Verify your profile</p>
-                    <p className="text-white/80 text-[12px]">Unlock all features by verifying your identity</p>
+                    <p className="text-white text-[14px] font-semibold mb-0.5">{T('verifyProfile')}</p>
+                    <p className="text-white/80 text-[12px]">{T('verifyProfileDesc')}</p>
                   </div>
                   <button onClick={() => { setShowVerifyBanner(false); sessionStorage.setItem('wihda_verify_skipped', '1'); }} className="text-white/60 ml-2 mt-0.5">✕</button>
                 </div>
@@ -194,13 +198,13 @@ export default function Home() {
                     onClick={() => navigate('/verify-identity')}
                     className="flex-1 bg-white text-blue-600 py-2 rounded-xl text-[13px] font-semibold active:scale-95 transition-transform flex items-center justify-center gap-1.5"
                   >
-                    <ShieldCheck className="size-4" /> Verify Now
+                    <ShieldCheck className="size-4" /> {T('verifyNow')}
                   </button>
                   <button
                     onClick={() => { setShowVerifyBanner(false); sessionStorage.setItem('wihda_verify_skipped', '1'); }}
                     className="flex-1 bg-white/20 text-white py-2 rounded-xl text-[13px] font-medium active:scale-95 transition-transform"
                   >
-                    Skip for Now
+                    {T('skipForNow')}
                   </button>
                 </div>
               </div>
@@ -208,7 +212,7 @@ export default function Home() {
             {activeTab === 'neighbor' ? (
               <>
                 <p className="text-[15px] font-semibold text-gray-800 mb-4 animate-slide-up">
-                  Need something or want to share today?
+                  {T('needSomething')}
                 </p>
 
                 {/* Category Grid */}
@@ -223,8 +227,8 @@ export default function Home() {
                         <cat.icon className={`size-6 ${cat.iconColor}`} />
                       </div>
                       <div className="text-center">
-                        <p className="text-[12px] font-semibold text-gray-800 leading-tight">{cat.title}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{cat.subtitle}</p>
+                        <p className="text-[12px] font-semibold text-gray-800 leading-tight">{T(cat.titleKey)}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{T(cat.subKey)}</p>
                       </div>
                     </button>
                   ))}
@@ -241,15 +245,15 @@ export default function Home() {
                   <div className="relative p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="size-4 text-yellow-300" />
-                      <span className="text-white/80 text-[12px] font-medium">Featured</span>
+                      <span className="text-white/80 text-[12px] font-medium">{T('featured')}</span>
                     </div>
-                    <h3 className="text-white text-[16px] md:text-[18px] font-semibold mb-1">Clean & Earn</h3>
-                    <p className="text-white/70 text-[12px] mb-3">Clean your area, earn coins!</p>
+                    <h3 className="text-white text-[16px] md:text-[18px] font-semibold mb-1">{T('cleanAndEarn')}</h3>
+                    <p className="text-white/70 text-[12px] mb-3">{T('cleanAndEarnDesc')}</p>
                     <button
                       onClick={() => navigate('/clean-earn')}
                       className="bg-white text-[#14ae5c] px-4 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition-transform"
                     >
-                      Start Now
+                      {T('startNow')}
                     </button>
                   </div>
                 </div>
@@ -257,12 +261,12 @@ export default function Home() {
                 {/* Recent Leftover Offers */}
                 <div className="mb-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-[15px] font-semibold text-gray-800">Recent Shares</h3>
+                    <h3 className="text-[15px] font-semibold text-gray-800">{T('recentShares')}</h3>
                     <button
                       onClick={() => navigate('/category/leftovers')}
                       className="text-[#14ae5c] text-[12px] font-medium flex items-center gap-0.5"
                     >
-                      See all <ChevronRight className="size-3" />
+                      {T('seeAll')} <ChevronRight className="size-3" />
                     </button>
                   </div>
                   <div className="flex gap-3 overflow-x-auto -mx-1 px-1 pb-2">

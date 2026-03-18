@@ -4,6 +4,8 @@ import {
   Home, Activity, Plus, Store, User, X,
   Utensils, Package, Handshake, HeartHandshake, HelpCircle, ArrowLeftRight,
 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 
 function triggerHaptic() {
   if ('vibrate' in navigator) {
@@ -11,28 +13,29 @@ function triggerHaptic() {
   }
 }
 
-const sheetActions = [
-  { id: 'leftovers',  label: 'Share Food',  sublabel: 'Offer leftovers',    icon: Utensils,       color: 'text-orange-500', bg: 'bg-orange-50',  path: '/category/leftovers'  },
-  { id: 'old-items',  label: 'Old Items',   sublabel: 'Give or reuse',       icon: Package,        color: 'text-blue-500',   bg: 'bg-blue-50',    path: '/category/old-items'  },
-  { id: 'borrow',     label: 'Borrow',      sublabel: 'Lend or borrow',      icon: Handshake,      color: 'text-purple-500', bg: 'bg-purple-50',  path: '/category/borrow'     },
-  { id: 'offer-help', label: 'Offer Help',  sublabel: 'Support neighbors',   icon: HeartHandshake, color: 'text-green-500',  bg: 'bg-green-50',   path: '/category/offer-help' },
-  { id: 'ask-help',   label: 'Ask Help',    sublabel: 'Request support',     icon: HelpCircle,     color: 'text-rose-500',   bg: 'bg-rose-50',    path: '/category/ask-help'   },
-  { id: 'exchange',   label: 'Exchange',    sublabel: 'Swap items',          icon: ArrowLeftRight, color: 'text-teal-500',   bg: 'bg-teal-50',    path: '/category/exchange'   },
+const sheetActionDefs = [
+  { id: 'leftovers',  labelKey: 'catLeftovers'  as const, subKey: 'catLeftoversSub'  as const, icon: Utensils,       color: 'text-orange-500', bg: 'bg-orange-50',  path: '/category/leftovers'  },
+  { id: 'old-items',  labelKey: 'catOldItems'   as const, subKey: 'catOldItemsSub'   as const, icon: Package,        color: 'text-blue-500',   bg: 'bg-blue-50',    path: '/category/old-items'  },
+  { id: 'borrow',     labelKey: 'catBorrow'     as const, subKey: 'catBorrowSub'     as const, icon: Handshake,      color: 'text-purple-500', bg: 'bg-purple-50',  path: '/category/borrow'     },
+  { id: 'offer-help', labelKey: 'catOfferHelp'  as const, subKey: 'catOfferHelpSub'  as const, icon: HeartHandshake, color: 'text-green-500',  bg: 'bg-green-50',   path: '/category/offer-help' },
+  { id: 'ask-help',   labelKey: 'catAskHelp'    as const, subKey: 'catAskHelpSub'    as const, icon: HelpCircle,     color: 'text-rose-500',   bg: 'bg-rose-50',    path: '/category/ask-help'   },
+  { id: 'exchange',   labelKey: 'catExchange'   as const, subKey: 'catExchangeSub'   as const, icon: ArrowLeftRight, color: 'text-teal-500',   bg: 'bg-teal-50',    path: '/category/exchange'   },
 ];
 
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language } = useApp();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   const navItems = [
-    { path: '/home',       icon: Home,     label: 'Home'       },
-    { path: '/activities', icon: Activity, label: 'Activities' },
-    { path: '__fab__',     icon: Plus,     label: 'Add'        },
-    { path: '/store',      icon: Store,    label: 'Store'      },
-    { path: '/profile',    icon: User,     label: 'Profile'    },
+    { path: '/profile',    icon: User,     label: t(language, 'profile')    },
+    { path: '/store',      icon: Store,    label: t(language, 'store')      },
+    { path: '__fab__',     icon: Plus,     label: 'Add'                     },
+    { path: '/activities', icon: Activity, label: t(language, 'activities') },
+    { path: '/home',       icon: Home,     label: t(language, 'home')       },
   ];
 
   return (
@@ -59,10 +62,10 @@ export default function BottomNav() {
               <X className="size-4 text-gray-500" />
             </button>
 
-            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">What would you like to do?</h3>
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">{t(language, 'whatToDo')}</h3>
 
             <div className="grid grid-cols-3 gap-3">
-              {sheetActions.map((action) => (
+              {sheetActionDefs.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => {
@@ -76,8 +79,8 @@ export default function BottomNav() {
                     <action.icon className={`size-6 ${action.color}`} />
                   </div>
                   <div className="text-center">
-                    <p className="text-[11px] font-semibold text-gray-800 leading-tight">{action.label}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{action.sublabel}</p>
+                    <p className="text-[11px] font-semibold text-gray-800 leading-tight">{t(language, action.labelKey)}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{t(language, action.subKey)}</p>
                   </div>
                 </button>
               ))}

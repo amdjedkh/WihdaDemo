@@ -2,18 +2,54 @@ export type Lang = 'en' | 'ar';
 
 const translations = {
   en: {
-    // Navigation
+    // Bottom nav
     home: 'Home',
+    store: 'Store',
+    activities: 'Activities',
+    profile: 'Profile',
+    // Side menu
     myListings: 'My Listings',
     myImpact: 'My Impact',
     myBadges: 'My Badges',
     cleanHistory: 'Clean & Earn History',
-    profile: 'Profile',
     notifications: 'Notifications',
     settings: 'Settings',
     helpCenter: 'Help Center',
     terms: 'Terms & Conditions',
     aboutUs: 'About Us',
+    // Header greetings
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    // Home tabs
+    myNeighbor: 'My Neighbor',
+    myNeighborhood: 'My Neighborhood',
+    needSomething: 'Need something or want to share today?',
+    seeAll: 'See all',
+    recentShares: 'Recent Shares',
+    upcomingActivities: 'Upcoming Activities',
+    featured: 'Featured',
+    cleanAndEarn: 'Clean & Earn',
+    cleanAndEarnDesc: 'Clean your area, earn coins!',
+    startNow: 'Start Now',
+    verifyProfile: 'Verify your profile',
+    verifyProfileDesc: 'Unlock all features by verifying your identity',
+    skipForNow: 'Skip for Now',
+    verifyNow: 'Verify Now',
+    // Categories
+    catLeftovers: 'Leftovers',
+    catLeftoversSub: 'Share extra food',
+    catOldItems: 'Old Items',
+    catOldItemsSub: 'Give or reuse',
+    catBorrow: 'Borrow',
+    catBorrowSub: 'Lend or borrow',
+    catOfferHelp: 'Offer Help',
+    catOfferHelpSub: 'Support neighbors',
+    catAskHelp: 'Ask Help',
+    catAskHelpSub: 'Request support',
+    catExchange: 'Exchange',
+    catExchangeSub: 'Swap items',
+    whatToDo: 'What would you like to do?',
     // Settings page
     settingsTitle: 'Settings',
     sectionProfile: 'Profile',
@@ -30,9 +66,8 @@ const translations = {
     darkMode: 'Dark Mode',
     darkModeOn: 'On',
     darkModeOff: 'Off',
-    arabicLabel: 'Arabic / عربي',
-    arabicDesc: 'Enable Arabic & RTL layout',
-    arabicActive: 'Arabic is active',
+    langEnglish: 'English',
+    langArabic: 'Arabic',
     signOut: 'Sign Out',
     changeEmail: 'Change Email',
     deleteAccount: 'Delete Account',
@@ -52,20 +87,57 @@ const translations = {
     verifyCodeDesc: 'Enter the 6-digit code sent to your new email',
     confirmChange: 'Confirm Change',
     emailChanged: 'Email updated successfully',
+    backToSettings: 'Back to Settings',
   },
   ar: {
-    // Navigation
+    // Bottom nav
     home: 'الرئيسية',
+    store: 'المتجر',
+    activities: 'الأنشطة',
+    profile: 'ملفي',
+    // Side menu
     myListings: 'قوائمي',
     myImpact: 'تأثيري',
     myBadges: 'شاراتي',
     cleanHistory: 'سجل التنظيف والكسب',
-    profile: 'ملفي الشخصي',
     notifications: 'الإشعارات',
     settings: 'الإعدادات',
     helpCenter: 'مركز المساعدة',
     terms: 'الشروط والأحكام',
     aboutUs: 'عن التطبيق',
+    // Header greetings
+    goodMorning: 'صباح الخير',
+    goodAfternoon: 'مساء الخير',
+    goodEvening: 'مساء الخير',
+    // Home tabs
+    myNeighbor: 'جاري',
+    myNeighborhood: 'حيّي',
+    needSomething: 'هل تحتاج شيئاً أو تريد المشاركة اليوم؟',
+    seeAll: 'عرض الكل',
+    recentShares: 'آخر المشاركات',
+    upcomingActivities: 'الأنشطة القادمة',
+    featured: 'مميز',
+    cleanAndEarn: 'نظّف واكسب',
+    cleanAndEarnDesc: 'نظّف منطقتك، اكسب عملات!',
+    startNow: 'ابدأ الآن',
+    verifyProfile: 'تحقق من ملفك الشخصي',
+    verifyProfileDesc: 'افتح جميع الميزات بالتحقق من هويتك',
+    skipForNow: 'تخطي الآن',
+    verifyNow: 'تحقق الآن',
+    // Categories
+    catLeftovers: 'بقايا الطعام',
+    catLeftoversSub: 'شارك طعاماً إضافياً',
+    catOldItems: 'أشياء قديمة',
+    catOldItemsSub: 'تبرع أو أعد الاستخدام',
+    catBorrow: 'استعارة',
+    catBorrowSub: 'أعر أو استعر',
+    catOfferHelp: 'تقديم مساعدة',
+    catOfferHelpSub: 'دعم الجيران',
+    catAskHelp: 'طلب مساعدة',
+    catAskHelpSub: 'طلب الدعم',
+    catExchange: 'تبادل',
+    catExchangeSub: 'تبادل الأشياء',
+    whatToDo: 'ماذا تريد أن تفعل؟',
     // Settings page
     settingsTitle: 'الإعدادات',
     sectionProfile: 'الملف الشخصي',
@@ -82,9 +154,8 @@ const translations = {
     darkMode: 'الوضع المظلم',
     darkModeOn: 'مفعّل',
     darkModeOff: 'معطّل',
-    arabicLabel: 'العربية',
-    arabicDesc: 'تفعيل اللغة العربية والكتابة من اليمين',
-    arabicActive: 'اللغة العربية مفعّلة',
+    langEnglish: 'English',
+    langArabic: 'العربية',
     signOut: 'تسجيل الخروج',
     changeEmail: 'تغيير البريد الإلكتروني',
     deleteAccount: 'حذف الحساب',
@@ -104,11 +175,12 @@ const translations = {
     verifyCodeDesc: 'أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك الجديد',
     confirmChange: 'تأكيد التغيير',
     emailChanged: 'تم تحديث البريد الإلكتروني بنجاح',
+    backToSettings: 'العودة للإعدادات',
   },
 } as const;
 
 export type TranslationKey = keyof typeof translations.en;
 
 export function t(lang: Lang, key: TranslationKey): string {
-  return translations[lang][key] ?? translations.en[key];
+  return (translations[lang] as any)[key] ?? translations.en[key];
 }

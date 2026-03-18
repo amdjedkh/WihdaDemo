@@ -53,14 +53,14 @@ export default function Header({
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return t(language, 'goodMorning');
+    if (hour < 17) return t(language, 'goodAfternoon');
+    return t(language, 'goodEvening');
   };
 
   if (title) {
     return (
-      <div className="flex items-center justify-between px-5 pt-[env(safe-area-inset-top)] bg-white">
+      <div className="flex items-center justify-between px-5 pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-900">
         <div className="flex items-center gap-3 h-14">
           {showBack && (
             <button onClick={() => navigate(-1)} className="text-gray-800 -ml-1">
@@ -83,7 +83,7 @@ export default function Header({
 
   return (
     <>
-      <div className="px-5 md:px-8 pt-[env(safe-area-inset-top)] pb-4 bg-gradient-to-b from-[#f0faf4] to-white">
+      <div className="px-5 md:px-8 pt-[env(safe-area-inset-top)] pb-4 bg-gradient-to-b from-[#f0faf4] to-white dark:from-gray-900 dark:to-gray-900">
         <div className="flex items-center justify-between h-12">
           {/* Left side — store icon + coins */}
           <div className="flex items-center gap-2">
@@ -126,14 +126,14 @@ export default function Header({
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
 
           {/* Sidebar panel */}
-          <div className="relative bg-white w-[280px] md:w-[340px] h-full flex flex-col overflow-y-auto shadow-2xl">
+          <div className="relative bg-white dark:bg-gray-900 w-[280px] md:w-[340px] h-full flex flex-col overflow-y-auto shadow-2xl">
             {/* Close button */}
             <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-gray-400">
               <X className="size-6" />
             </button>
 
             {/* Profile section */}
-            <div className="pt-[env(safe-area-inset-top)] px-5 pb-5 bg-gradient-to-b from-[#f0faf4] to-white mt-12">
+            <div className="pt-[env(safe-area-inset-top)] px-5 pb-5 bg-gradient-to-b from-[#f0faf4] to-white dark:from-gray-800 dark:to-gray-900 mt-12">
               <div className="flex items-center gap-3">
                 {profile?.photoUrl ? (
                   <img src={profile.photoUrl} alt="Profile" className="size-12 rounded-full object-cover" />
