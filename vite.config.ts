@@ -31,9 +31,8 @@ export default defineConfig({
     },
   },
 
-  // Required for Capacitor: assets must use relative paths so they work
-  // inside the native WebView (file:// origin on Android/iOS)
-  base: './',
+  // Use relative paths for Capacitor (file:// origin), absolute for web builds
+  base: process.env.VITE_WEB_BUILD ? '/' : './',
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
