@@ -329,7 +329,7 @@ export default function ChooseLocation() {
       <PageTransition>
       <SwipeBack>
       <Toaster position="top-center" />
-      <div className="flex flex-col size-full bg-white">
+      <div className="flex flex-col h-dvh w-full bg-white">
 
         {/* Header */}
         <div className="px-5 pt-[env(safe-area-inset-top)] shrink-0">
