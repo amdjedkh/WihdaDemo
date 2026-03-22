@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import wihdaLogo from "../../assets/wihda_logo.png";
@@ -6,7 +6,9 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2, ShieldCheck } from '
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { t } from '../lib/i18n';
-import { API_BASE } from '../lib/api';
+import { API_BASE, setTokens } from '../lib/api';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,17 +19,70 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn } = useAuth();
+  const { signIn, refreshProfile } = useAuth();
   const { language } = useApp();
+  const browserListenerRef = useRef<{ remove: () => void } | null>(null);
 
-  const handleGoogleLogin = async () => {
+  // Clean up browser listener on unmount
+  useEffect(() => {
+    return () => { browserListenerRef.current?.remove(); };
+  }, []);
+
+  const handleGoogleLogin = useCallback(async () => {
     setGoogleLoading(true);
-    try {
+
+    if (!Capacitor.isNativePlatform()) {
+      // Web: plain redirect — backend handles everything, returns tokens in URL
       window.location.href = `${API_BASE}/v1/auth/google`;
+      return;
+    }
+
+    // Native (iOS / Android): open SFSafariViewController / Chrome Custom Tab.
+    // Google allows OAuth in these — NOT in plain WebViews.
+    // Flow: open browser → user signs in → backend stores tokens in KV →
+    //       app polls session endpoint → Browser.close() → navigate to home.
+    try {
+      const sessionId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+
+      let done = false;
+
+      // If user manually closes the browser before OAuth completes
+      browserListenerRef.current = await Browser.addListener('browserFinished', () => {
+        browserListenerRef.current?.remove();
+        browserListenerRef.current = null;
+        if (!done) setGoogleLoading(false);
+      });
+
+      await Browser.open({
+        url: `${API_BASE}/v1/auth/google?session_id=${sessionId}`,
+        presentationStyle: 'popover',
+      });
+
+      // Poll for tokens while the browser is open (every 800 ms, up to 40 s)
+      for (let i = 0; i < 50 && !done; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 800));
+        try {
+          const res  = await fetch(`${API_BASE}/v1/auth/google/session?id=${sessionId}`);
+          const data = await res.json() as any;
+          if (data?.success && data?.data?.access_token) {
+            done = true;
+            browserListenerRef.current?.remove();
+            browserListenerRef.current = null;
+            await Browser.close();
+            setTokens(data.data.access_token, data.data.refresh_token || '');
+            navigate('/home');
+            refreshProfile().catch(() => {});
+            return;
+          }
+        } catch { /* network hiccup — keep polling */ }
+      }
+
+      if (!done) setGoogleLoading(false);
     } catch {
       setGoogleLoading(false);
     }
-  };
+  }, [navigate, refreshProfile]);
 
   const justVerified = (location.state as any)?.verified;
 
@@ -51,10 +106,7 @@ export default function Login() {
     if (result.error) {
       if (result.code === 'CONTACT_VERIFICATION_REQUIRED') {
         navigate('/verify-otp', {
-          state: {
-            contactChannel: result.contactChannel || 'email',
-            email,
-          },
+          state: { contactChannel: result.contactChannel || 'email', email },
         });
         return;
       }
