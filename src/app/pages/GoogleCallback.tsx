@@ -43,8 +43,7 @@ export default function GoogleCallback() {
 
     if (accessToken) {
       setTokens(accessToken, refreshToken || '');
-      navigate('/home', { replace: true });
-      refreshProfile().catch(() => {});
+      window.location.replace('/home');
       return;
     }
 
