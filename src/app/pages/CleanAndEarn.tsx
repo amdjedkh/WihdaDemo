@@ -44,6 +44,7 @@ export default function CleanAndEarn() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [coinsEarned, setCoinsEarned] = useState(0);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [photoSheetFor, setPhotoSheetFor] = useState<'before' | 'after' | null>(null);
@@ -287,6 +288,7 @@ export default function CleanAndEarn() {
         }
         if (status === 'rejected') {
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
+          setRejectionReason(submission.review_note || '');
           setStep('rejected');
           return;
         }
@@ -755,26 +757,24 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               </div>
               <h2 className="text-[22px] font-semibold text-red-500 mb-1">Not Approved</h2>
               <p className="text-gray-500 text-[14px] text-center mb-6 px-4">
-                We couldn't detect enough improvement. Please try again with clearer photos.
+                Your submission could not be verified. Please review the reason below and try again.
               </p>
 
-              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
-                <p className="text-[13px] font-semibold text-red-600 mb-2">Possible reasons:</p>
-                <ul className="text-[12px] text-gray-600 space-y-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">-</span>
-                    Photos are too similar
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">-</span>
-                    Area doesn't show significant cleaning
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-red-400 mt-0.5">-</span>
-                    Photos are unclear or poorly lit
-                  </li>
-                </ul>
-              </div>
+              {rejectionReason ? (
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
+                  <p className="text-[13px] font-semibold text-red-600 mb-1">Reason:</p>
+                  <p className="text-[13px] text-gray-700">{rejectionReason}</p>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
+                  <p className="text-[13px] font-semibold text-red-600 mb-2">Possible reasons:</p>
+                  <ul className="text-[12px] text-gray-600 space-y-1.5">
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Photos are too similar</li>
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Area doesn't show significant cleaning</li>
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Photos are unclear or poorly lit</li>
+                  </ul>
+                </div>
+              )}
 
               <div className="flex gap-3 w-full">
                 <button
