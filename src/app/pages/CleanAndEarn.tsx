@@ -59,6 +59,17 @@ export default function CleanAndEarn() {
   // Check for active submission on mount
   useEffect(() => {
     if (!user) { setStep('intro'); return; }
+
+    // Restore persisted result first
+    const saved = localStorage.getItem('cleanify_result');
+    if (saved) {
+      try {
+        const { savedStep, savedCoins, savedRejectionReason } = JSON.parse(saved);
+        if (savedStep === 'approved') { setCoinsEarned(savedCoins ?? 0); setStep('approved'); return; }
+        if (savedStep === 'rejected') { setRejectionReason(savedRejectionReason ?? ''); setStep('rejected'); return; }
+      } catch {}
+    }
+
     apiFetch('/v1/cleanify/active')
       .then((data) => {
         const sub = data.data?.submission;
@@ -287,6 +298,7 @@ export default function CleanAndEarn() {
         if (status === 'approved') {
           const coins = submission.coins_awarded ?? 150;
           setCoinsEarned(coins);
+          localStorage.setItem('cleanify_result', JSON.stringify({ savedStep: 'approved', savedCoins: coins }));
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
           LocalNotifications.schedule({ notifications: [{ id: 1003, title: 'Submission Approved! 🎉', body: `You earned ${coins} coins! Great work!`, schedule: { at: new Date(Date.now() + 500) } }] }).catch(() => {});
           setStep('approved');
@@ -295,9 +307,11 @@ export default function CleanAndEarn() {
           return;
         }
         if (status === 'rejected') {
+          const reason = submission.review_note || '';
+          setRejectionReason(reason);
+          localStorage.setItem('cleanify_result', JSON.stringify({ savedStep: 'rejected', savedRejectionReason: reason }));
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
-          LocalNotifications.schedule({ notifications: [{ id: 1004, title: 'Submission Not Approved', body: submission.review_note || 'Your submission could not be verified. Please try again.', schedule: { at: new Date(Date.now() + 500) } }] }).catch(() => {});
-          setRejectionReason(submission.review_note || '');
+          LocalNotifications.schedule({ notifications: [{ id: 1004, title: 'Submission Not Approved', body: reason || 'Your submission could not be verified. Please try again.', schedule: { at: new Date(Date.now() + 500) } }] }).catch(() => {});
           setStep('rejected');
           return;
         }
@@ -325,6 +339,7 @@ export default function CleanAndEarn() {
   };
 
   const resetFlow = () => {
+    localStorage.removeItem('cleanify_result');
     setStep('intro');
     setSubmissionId(null);
     setActiveSubmission(null);
