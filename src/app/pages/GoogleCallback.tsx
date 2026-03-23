@@ -43,9 +43,8 @@ export default function GoogleCallback() {
 
     if (accessToken) {
       setTokens(accessToken, refreshToken || '');
-      refreshProfile()
-        .catch(() => {})
-        .finally(() => navigate('/home', { replace: true }));
+      navigate('/home', { replace: true });
+      refreshProfile().catch(() => {});
       return;
     }
 
