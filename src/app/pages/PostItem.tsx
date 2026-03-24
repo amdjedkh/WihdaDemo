@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,8 @@ const foodTypes = [
 
 export default function PostItem() {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const [searchParams] = useSearchParams();
+  const editOfferId = searchParams.get('edit');
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [tab, setTab] = useState<'give' | 'get'>('give');
@@ -48,10 +50,30 @@ export default function PostItem() {
   const [urgency, setUrgency] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const pageTitle = categoryTitles[categoryId || ''] || 'Share';
+  // Load existing offer data when editing
+  useEffect(() => {
+    if (!editOfferId) return;
+    apiFetch(`/v1/leftovers/offers/${editOfferId}`)
+      .then((res) => {
+        const o = res.data ?? res;
+        setTitle(o.title || '');
+        setDescription(o.description || '');
+        setQuantity(o.quantity || 1);
+        if (o.survey) {
+          setFoodType(o.survey.food_type || 'cooked_meal');
+          setPortions(o.survey.portions || 1);
+        }
+        if (o.image_urls?.length) setExistingImageUrls(o.image_urls);
+        else if (o.image_url) setExistingImageUrls([o.image_url]);
+      })
+      .catch(() => {});
+  }, [editOfferId]);
+
+  const pageTitle = editOfferId ? 'Edit Offer' : (categoryTitles[categoryId || ''] || 'Share');
   const isFood = categoryId === 'leftovers';
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,24 +88,24 @@ export default function PostItem() {
     });
   };
 
-  const uploadFirstImage = async (): Promise<string | undefined> => {
-    if (imageFiles.length === 0) return undefined;
-    try {
-      const file = imageFiles[0];
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace('jpeg', 'jpg');
-      const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
-      // Step 1: get presigned upload URL
-      const presigned = await apiFetch('/v1/uploads/presigned-url', {
-        method: 'POST',
-        body: JSON.stringify({ content_type: 'leftover_image', file_extension: safeExt }),
-      });
-      // Step 2: PUT file bytes directly to the signed URL
-      await uploadToPresignedUrl(presigned.data.upload_url, file);
-      return presigned.data.file_url as string;
-    } catch (err) {
-      console.warn('Image upload failed, continuing without image:', err);
-      return undefined;
+  const uploadAllImages = async (): Promise<string[]> => {
+    if (imageFiles.length === 0) return [];
+    const urls: string[] = [];
+    for (const file of imageFiles) {
+      try {
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace('jpeg', 'jpg');
+        const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
+        const presigned = await apiFetch('/v1/uploads/presigned-url', {
+          method: 'POST',
+          body: JSON.stringify({ content_type: 'leftover_image', file_extension: safeExt }),
+        });
+        await uploadToPresignedUrl(presigned.data.upload_url, file);
+        urls.push(presigned.data.file_url as string);
+      } catch (err) {
+        console.warn('Image upload failed, skipping:', err);
+      }
     }
+    return urls;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,13 +127,14 @@ export default function PostItem() {
     try {
       if (isFood) {
         if (tab === 'give') {
-          // Upload image first (non-blocking on failure)
-          const imageUrl = await uploadFirstImage();
+          // Upload any new images; combine with kept existing images
+          const newUrls = await uploadAllImages();
+          const allImageUrls = [...existingImageUrls, ...newUrls];
 
           const body: any = {
             title: title.trim(),
             description: description.trim() || undefined,
-            image_url: imageUrl,
+            image_urls: allImageUrls.length > 0 ? allImageUrls : undefined,
             survey: {
               schema_version: 1,
               food_type: foodType,
@@ -122,16 +145,23 @@ export default function PostItem() {
             quantity,
           };
 
-          if (expiryDate) {
+          if (!editOfferId && expiryDate) {
             const expiryMs = new Date(expiryDate).getTime() - Date.now();
             const expiryHours = Math.max(1, Math.min(72, Math.round(expiryMs / 3600000)));
             body.expiry_hours = expiryHours;
           }
 
-          await apiFetch('/v1/leftovers/offers', {
-            method: 'POST',
-            body: JSON.stringify(body),
-          });
+          if (editOfferId) {
+            await apiFetch(`/v1/leftovers/offers/${editOfferId}`, {
+              method: 'PATCH',
+              body: JSON.stringify(body),
+            });
+          } else {
+            await apiFetch('/v1/leftovers/offers', {
+              method: 'POST',
+              body: JSON.stringify(body),
+            });
+          }
         } else {
           // GET (need) post — title + description only
           await apiFetch('/v1/leftovers/needs', {
@@ -149,7 +179,7 @@ export default function PostItem() {
         return;
       }
 
-      toast.success('Post created!', { duration: 2000 });
+      toast.success(editOfferId ? 'Post updated!' : 'Post created!', { duration: 2000 });
       setTimeout(() => navigate(`/category/${categoryId}`), 1500);
     } catch (err: any) {
       console.error('Post creation error:', err);
@@ -237,8 +267,22 @@ export default function PostItem() {
                     <Camera className="size-5 text-[#14ae5c] mb-0.5" />
                     <span className="text-[9px] text-[#14ae5c] font-medium">Add</span>
                   </button>
+                  {/* Existing images (edit mode) */}
+                  {existingImageUrls.map((url, idx) => (
+                    <div key={`existing-${idx}`} className="relative shrink-0 size-[80px] rounded-xl overflow-hidden">
+                      <img src={url} alt={`Existing ${idx + 1}`} className="size-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setExistingImageUrls(existingImageUrls.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full size-5 flex items-center justify-center"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* New images */}
                   {images.map((img, idx) => (
-                    <div key={idx} className="relative shrink-0 size-[80px] rounded-xl overflow-hidden">
+                    <div key={`new-${idx}`} className="relative shrink-0 size-[80px] rounded-xl overflow-hidden">
                       <img src={img} alt={`Upload ${idx + 1}`} className="size-full object-cover" />
                       <button
                         type="button"
@@ -400,7 +444,7 @@ export default function PostItem() {
                 <Loader2 className="size-5 animate-spin" />
               ) : (
                 <>
-                  <Check className="size-5" /> {tab === 'give' ? 'Publish Offer' : 'Post Request'}
+                  <Check className="size-5" /> {editOfferId ? 'Update Offer' : tab === 'give' ? 'Publish Offer' : 'Post Request'}
                 </>
               )}
             </button>

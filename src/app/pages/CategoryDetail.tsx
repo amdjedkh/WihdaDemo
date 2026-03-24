@@ -22,6 +22,9 @@ import {
   HelpCircle,
   ArrowLeftRight,
   Trash2,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 type CatMeta = {
@@ -139,6 +142,10 @@ export default function CategoryDetail() {
     }
   };
 
+  const handleModifyOffer = (offerId: string) => {
+    navigate(`/post-item/${categoryId}?edit=${offerId}`);
+  };
+
   const handleDeleteNeed = async (needId: string) => {
     try {
       await apiFetch(`/v1/leftovers/needs/${needId}`, { method: 'DELETE' });
@@ -237,6 +244,7 @@ export default function CategoryDetail() {
                     isOwner={user?.id === offer.user_id}
                     onRequest={() => handleRequest(offer.id)}
                     onDelete={() => handleDeleteOffer(offer.id)}
+                    onModify={() => handleModifyOffer(offer.id)}
                   />
                 ))}
               </div>
@@ -283,7 +291,7 @@ export default function CategoryDetail() {
   );
 }
 
-function PostCard({ post, navigate, isFavorited, onFavorite, isOwner, onRequest, onDelete }: {
+function PostCard({ post, navigate, isFavorited, onFavorite, isOwner, onRequest, onDelete, onModify }: {
   post: any;
   navigate: any;
   isFavorited: boolean;
@@ -291,81 +299,157 @@ function PostCard({ post, navigate, isFavorited, onFavorite, isOwner, onRequest,
   isOwner: boolean;
   onRequest: () => void;
   onDelete: () => void;
+  onModify: () => void;
 }) {
   const userName = post.user?.display_name || 'Neighbor';
   const timeAgo = getRelativeTime(post.created_at);
   const portions = post.survey?.portions;
-  const coins = 100;
+  const [imgIdx, setImgIdx] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Support both image_urls array and legacy image_url
+  const imageUrls: string[] = post.image_urls?.length ? post.image_urls : (post.image_url ? [post.image_url] : []);
 
   return (
-    <div
-      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm cursor-pointer"
-      onClick={() => navigate(`/leftovers/${post.id}`)}
-    >
-      {/* Image */}
-      {post.image_url && (
-        <div className="w-full h-[140px] overflow-hidden">
-          <img src={post.image_url} alt={post.title} className="w-full h-full object-cover" />
+    <>
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-xs shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="bg-red-100 rounded-full p-3">
+                <Trash2 className="size-6 text-red-500" />
+              </div>
+              <p className="text-[16px] font-semibold text-gray-800 dark:text-white">Delete Post?</p>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400">
+                This will permanently remove your offer. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-[13px] font-medium text-gray-600 dark:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); onDelete(); }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-[13px] font-semibold"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="flex items-center gap-3 p-4 pb-2">
-        <div className="size-10 rounded-full bg-[#14ae5c]/10 flex items-center justify-center">
-          <span className="text-[16px] font-bold text-[#14ae5c]">{userName[0]?.toUpperCase()}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-semibold text-gray-800 dark:text-white">{userName}</p>
-          <div className="flex items-center gap-2 text-[11px] text-gray-400">
-            <span className="flex items-center gap-0.5"><Clock className="size-3" />{timeAgo}</span>
+      <div
+        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm cursor-pointer"
+        onClick={() => navigate(`/leftovers/${post.id}`)}
+      >
+        {/* Image carousel */}
+        {imageUrls.length > 0 && (
+          <div className="relative w-full h-[140px] overflow-hidden">
+            <img src={imageUrls[imgIdx]} alt={post.title} className="w-full h-full object-cover" />
+            {imageUrls.length > 1 && (
+              <>
+                <button
+                  onClick={e => { e.stopPropagation(); setImgIdx(i => (i - 1 + imageUrls.length) % imageUrls.length); }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-0.5"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setImgIdx(i => (i + 1) % imageUrls.length); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-0.5"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  {imageUrls.map((_, i) => (
+                    <div key={i} className={`size-1.5 rounded-full ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`} />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        </div>
-        {!isOwner && (
-          <button
-            onClick={e => { e.stopPropagation(); onFavorite(); }}
-            className="p-1.5 rounded-full transition-colors active:scale-90"
-          >
-            <Heart className={`size-4 transition-colors ${isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} />
-          </button>
         )}
-      </div>
 
-      <div className="px-4 pb-2">
-        <h4 className="text-[14px] font-semibold text-gray-800 dark:text-white mb-1">{post.title}</h4>
-        {post.description && (
-          <p className="text-[12px] text-gray-500 dark:text-gray-400 line-clamp-2">{post.description}</p>
-        )}
-        {portions && (
-          <p className="text-[11px] text-[#14ae5c] mt-1 font-medium">{portions} portion{portions > 1 ? 's' : ''} available</p>
-        )}
-      </div>
-
-      <div className="px-4 pb-4 pt-2 flex items-center justify-between">
-        {isOwner ? (
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Your post</span>
+        <div className="flex items-center gap-3 p-4 pb-2">
+          <div className="size-10 rounded-full bg-[#14ae5c]/10 flex items-center justify-center">
+            <span className="text-[16px] font-bold text-[#14ae5c]">{userName[0]?.toUpperCase()}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold text-gray-800 dark:text-white">{userName}</p>
+            <div className="flex items-center gap-2 text-[11px] text-gray-400">
+              <span className="flex items-center gap-0.5"><Clock className="size-3" />{timeAgo}</span>
+            </div>
+          </div>
+          {!isOwner && (
             <button
-              onClick={e => { e.stopPropagation(); onDelete(); }}
-              className="p-1.5 text-red-400 active:scale-90 transition-transform"
+              onClick={e => { e.stopPropagation(); onFavorite(); }}
+              className="p-1.5 rounded-full transition-colors active:scale-90"
             >
-              <Trash2 className="size-4" />
+              <Heart className={`size-4 transition-colors ${isFavorited ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} />
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={e => { e.stopPropagation(); onRequest(); }}
-            className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform"
-          >
-            <MessageCircle className="size-3.5" /> Request
-          </button>
-        )}
-        <div className="flex items-center gap-1.5 text-[#f0a326] font-semibold text-[13px]">
-          <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-            <span className="text-[7px] font-bold">$</span>
-          </div>
-          {coins}
+          )}
+        </div>
+
+        <div className="px-4 pb-2">
+          <h4 className="text-[14px] font-semibold text-gray-800 dark:text-white mb-1">{post.title}</h4>
+          {post.description && (
+            <p className="text-[12px] text-gray-500 dark:text-gray-400 line-clamp-2">{post.description}</p>
+          )}
+          {portions && (
+            <p className="text-[11px] text-[#14ae5c] mt-1 font-medium">{portions} portion{portions > 1 ? 's' : ''} available</p>
+          )}
+        </div>
+
+        <div className="px-4 pb-4 pt-2 flex items-center justify-between">
+          {isOwner ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Your post</span>
+              <button
+                onClick={e => { e.stopPropagation(); onModify(); }}
+                className="p-1.5 text-[#14ae5c] active:scale-90 transition-transform"
+                title="Edit"
+              >
+                <Pencil className="size-4" />
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                className="p-1.5 text-red-400 active:scale-90 transition-transform"
+                title="Delete"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={e => { e.stopPropagation(); onRequest(); }}
+              className="bg-[#14ae5c] text-white px-4 py-2 rounded-full text-[12px] font-semibold flex items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <MessageCircle className="size-3.5" /> Request
+            </button>
+          )}
+          {/* Coins only shown to the post owner (giver) */}
+          {isOwner && (
+            <div className="flex items-center gap-1.5 text-[#f0a326] font-semibold text-[13px]">
+              <div className="size-[18px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
+                <span className="text-[7px] font-bold">$</span>
+              </div>
+              200
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -416,12 +500,15 @@ function RequestCard({ post, navigate, isOwner, onDelete, onOfferHelp }: {
             Offer to Help
           </button>
         )}
-        <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
-          <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
-            <span className="text-[7px] font-bold">$</span>
+        {/* Coins only shown to the request owner (receiver earns on completion) */}
+        {isOwner && (
+          <div className="flex items-center gap-1 text-[#f0a326] font-semibold text-[12px]">
+            <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
+              <span className="text-[7px] font-bold">$</span>
+            </div>
+            50
           </div>
-          50
-        </div>
+        )}
       </div>
     </div>
   );
