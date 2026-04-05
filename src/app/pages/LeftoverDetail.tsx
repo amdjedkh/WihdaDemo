@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import MobileContainer from '../components/MobileContainer';
 import PageTransition from '../components/PageTransition';
@@ -15,6 +15,8 @@ import {
   Trash2,
   Heart,
   User,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 function getRelativeTime(isoDate: string) {
@@ -34,6 +36,7 @@ export default function LeftoverDetail() {
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -130,16 +133,56 @@ export default function LeftoverDetail() {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
-            {/* Image */}
-            {offer.image_url ? (
-              <div className="w-full h-[220px] overflow-hidden">
-                <img src={offer.image_url} alt={offer.title} className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className="w-full h-[160px] bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
-                <Utensils className="size-16 text-orange-300" />
-              </div>
-            )}
+            {/* Image carousel */}
+            {(() => {
+              // Support both image_urls array and legacy image_url string
+              const imageUrls: string[] = offer.image_urls?.length
+                ? offer.image_urls
+                : offer.image_url
+                ? [offer.image_url]
+                : [];
+              return imageUrls.length > 0 ? (
+                <div className="relative w-full h-[220px] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  <img
+                    src={imageUrls[imgIdx]}
+                    alt={`${offer.title} ${imgIdx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {imageUrls.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setImgIdx(i => (i - 1 + imageUrls.length) % imageUrls.length)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1.5 active:scale-90 transition-transform"
+                      >
+                        <ChevronLeft className="size-5" />
+                      </button>
+                      <button
+                        onClick={() => setImgIdx(i => (i + 1) % imageUrls.length)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white rounded-full p-1.5 active:scale-90 transition-transform"
+                      >
+                        <ChevronRight className="size-5" />
+                      </button>
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {imageUrls.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setImgIdx(i)}
+                            className={`size-2 rounded-full transition-all ${i === imgIdx ? 'bg-white w-4' : 'bg-white/60'}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="absolute top-3 right-3 bg-black/50 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
+                        {imgIdx + 1}/{imageUrls.length}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-[160px] bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                  <Utensils className="size-16 text-orange-300" />
+                </div>
+              );
+            })()}
 
             {/* Content */}
             <div className="px-5 py-4 space-y-4">
