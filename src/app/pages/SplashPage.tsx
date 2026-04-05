@@ -27,7 +27,7 @@ export default function SplashPage() {
   }, [navigate]);
 
   return (
-    <div className="h-full w-full bg-gray-100 flex items-center justify-center">
+    <div className="h-screen w-full bg-white flex items-center justify-center">
       <div className="bg-white relative w-full max-w-[430px] h-full sm:h-[812px] overflow-hidden sm:shadow-2xl sm:rounded-[2.5rem] sm:border sm:border-gray-200/50">
         <div
           className={`flex flex-col items-center justify-center size-full bg-white transition-all duration-700 ease-out ${

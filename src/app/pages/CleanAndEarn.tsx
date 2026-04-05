@@ -561,8 +561,8 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                     <div className="bg-[#14ae5c]/10 rounded-full p-4 mb-3">
                       <ImageIcon className="size-8 text-[#14ae5c]" />
                     </div>
-                    <p className="text-[14px] font-medium text-[#14ae5c]">Tap to add photo</p>
-                    <p className="text-[12px] text-gray-400 mt-1">Camera or photo library</p>
+                    <p className="text-[14px] font-medium text-[#14ae5c]">{t(language, 'tapToAddPhoto')}</p>
+                    <p className="text-[12px] text-gray-400 mt-1">{t(language, 'cameraOrLibrary')}</p>
                   </>
                 )}
               </button>
@@ -575,19 +575,19 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
           {/* ── Timer ── */}
           {step === 'timer' && (
             <div className="flex flex-col items-center pt-6">
-              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">Clean the Area</h2>
+              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">{t(language, 'cleanTheArea')}</h2>
               <p className="text-gray-500 text-[13px] mb-2">
-                {isTimerRunning ? 'Timer is running... Keep cleaning!' : 'Start the timer when ready'}
+                {isTimerRunning ? t(language, 'timerRunning') : t(language, 'timerReady')}
               </p>
               <p className="text-[12px] text-[#14ae5c] font-medium mb-4">
-                Start the timer when you begin cleaning
+                {t(language, 'timerStartHint')}
               </p>
 
               {beforeImage && (
                 <div className="w-full rounded-2xl overflow-hidden mb-6 border border-gray-100">
                   <img src={beforeImage} alt="Before" className="w-full h-[160px] object-cover" />
                   <div className="bg-gray-50 px-3 py-1.5 text-[11px] text-gray-500 font-medium">
-                    Before Photo ✓
+                    {t(language, 'beforePhotoConfirmed')}
                   </div>
                 </div>
               )}
@@ -604,7 +604,7 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                 {isTimerRunning && (
                   <div className="flex items-center gap-1.5 mt-2">
                     <div className="size-2 rounded-full bg-[#14ae5c] animate-pulse" />
-                    <span className="text-[12px] text-[#14ae5c] font-medium">Recording</span>
+                    <span className="text-[12px] text-[#14ae5c] font-medium">{t(language, 'recording')}</span>
                   </div>
                 )}
               </div>
@@ -614,14 +614,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   onClick={startTimer}
                   className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                 >
-                  <Play className="size-5" fill="white" /> Start Timer
+                  <Play className="size-5" fill="white" /> {t(language, 'startTimer')}
                 </button>
               ) : (
                 <button
                   onClick={stopTimer}
                   className="w-full bg-red-500 text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                 >
-                  <Square className="size-4" fill="white" /> Done Cleaning
+                  <Square className="size-4" fill="white" /> {t(language, 'doneCleaning')}
                 </button>
               )}
             </div>
@@ -633,9 +633,9 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-blue-50 rounded-2xl p-4 mb-4">
                 <Camera className="size-8 text-blue-500" />
               </div>
-              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">After Photo</h2>
+              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">{t(language, 'afterPhoto')}</h2>
               <p className="text-gray-500 text-[13px] text-center mb-4">
-                Show us how clean it looks now!
+                {t(language, 'afterPhotoDesc')}
               </p>
 
               {/* Time check banner */}
@@ -644,11 +644,11 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                 {beforeImage && (
                   <div className="flex-1 rounded-xl overflow-hidden border border-gray-100">
                     <img src={beforeImage} alt="Before" className="w-full h-[100px] object-cover" />
-                    <div className="bg-gray-50 px-2 py-1 text-[10px] text-gray-500 font-medium text-center">Before</div>
+                    <div className="bg-gray-50 px-2 py-1 text-[10px] text-gray-500 font-medium text-center">{t(language, 'before')}</div>
                   </div>
                 )}
                 <div className="flex-1 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center h-[124px]">
-                  <span className="text-[10px] text-gray-400">After</span>
+                  <span className="text-[10px] text-gray-400">{t(language, 'after')}</span>
                 </div>
               </div>
 
@@ -665,7 +665,7 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                       <ImageIcon className="size-8 text-[#14ae5c]" />
                     </div>
                     <p className="text-[14px] font-medium text-[#14ae5c]">
-                      Tap to add photo
+                      {t(language, 'tapToAddPhoto')}
                     </p>
                   </>
                 )}
@@ -686,9 +686,9 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-green-50 rounded-3xl p-8 mb-6">
                 <Loader2 className="size-12 text-[#14ae5c] animate-spin" />
               </div>
-              <h2 className="text-[20px] font-semibold text-gray-900 mb-2">Validating...</h2>
+              <h2 className="text-[20px] font-semibold text-gray-900 mb-2">{t(language, 'validating')}</h2>
               <p className="text-gray-500 text-[14px] text-center px-8">
-                Our AI is comparing the before and after images to verify the cleanup
+                {t(language, 'validatingDesc')}
               </p>
               <div className="flex gap-2 mt-8">
                 <div className="size-2 rounded-full bg-[#14ae5c] animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -704,21 +704,21 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-blue-50 rounded-3xl p-6 mb-4">
                 <Clock className="size-16 text-blue-500" />
               </div>
-              <h2 className="text-[22px] font-semibold text-blue-600 mb-1">Under Review</h2>
+              <h2 className="text-[22px] font-semibold text-blue-600 mb-1">{t(language, 'underReview')}</h2>
               <p className="text-gray-500 text-[14px] text-center mb-6 px-4">
-                Your submission is being reviewed by our moderators. You'll be notified within 24 hours.
+                {t(language, 'pendingReviewTeamDesc')}
               </p>
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 w-full mb-6">
-                <p className="text-[13px] font-semibold text-blue-700 mb-1">What happens next?</p>
+                <p className="text-[13px] font-semibold text-blue-700 mb-1">{t(language, 'whatHappensNext')}</p>
                 <p className="text-[12px] text-blue-600">
-                  Our team will review your before/after photos and award coins if the cleanup is verified.
+                  {t(language, 'pendingReviewTeamInfo')}
                 </p>
               </div>
               <button
                 onClick={() => navigate('/activities')}
                 className="w-full bg-[#14ae5c] text-white py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform"
               >
-                Back to Activities
+                {t(language, 'backToActivities')}
               </button>
             </div>
           )}
@@ -729,13 +729,13 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-green-50 rounded-3xl p-6 mb-4">
                 <CheckCircle2 className="size-16 text-[#14ae5c]" />
               </div>
-              <h2 className="text-[22px] font-semibold text-[#14ae5c] mb-1">Approved!</h2>
+              <h2 className="text-[22px] font-semibold text-[#14ae5c] mb-1">{t(language, 'approved')}</h2>
               <p className="text-gray-500 text-[14px] text-center mb-6">
-                Great job making your neighborhood cleaner!
+                {t(language, 'approvedDesc')}
               </p>
 
               <div className="bg-gradient-to-br from-[#fff9e6] to-[#fff3cc] rounded-2xl p-6 w-full text-center mb-6">
-                <p className="text-[12px] text-gray-500 mb-2">Coins Earned</p>
+                <p className="text-[12px] text-gray-500 mb-2">{t(language, 'coinsEarned')}</p>
                 <div className="flex items-center justify-center gap-3">
                   <div className="size-[36px] rounded-full border-[3px] border-[#f0a326] flex items-center justify-center">
                     <span className="text-[16px] font-bold text-[#f0a326]">$</span>
@@ -748,11 +748,11 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                 <div className="grid grid-cols-2 gap-3 w-full mb-6">
                   <div className="rounded-xl overflow-hidden border border-gray-100">
                     <img src={beforeImage} alt="Before" className="w-full h-[100px] object-cover" />
-                    <div className="bg-red-50 px-2 py-1 text-[10px] text-red-500 font-medium text-center">Before</div>
+                    <div className="bg-red-50 px-2 py-1 text-[10px] text-red-500 font-medium text-center">{t(language, 'before')}</div>
                   </div>
                   <div className="rounded-xl overflow-hidden border border-gray-100">
                     <img src={afterImage} alt="After" className="w-full h-[100px] object-cover" />
-                    <div className="bg-green-50 px-2 py-1 text-[10px] text-[#14ae5c] font-medium text-center">After</div>
+                    <div className="bg-green-50 px-2 py-1 text-[10px] text-[#14ae5c] font-medium text-center">{t(language, 'after')}</div>
                   </div>
                 </div>
               )}
@@ -762,13 +762,13 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   onClick={() => navigate('/activities')}
                   className="flex-1 bg-[#14ae5c] text-white py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform"
                 >
-                  Done
+                  {t(language, 'done')}
                 </button>
                 <button
                   onClick={resetFlow}
                   className="flex-1 border-2 border-[#14ae5c] text-[#14ae5c] py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
                 >
-                  <RotateCcw className="size-4" /> Again
+                  <RotateCcw className="size-4" /> {t(language, 'again')}
                 </button>
               </div>
             </div>
@@ -780,23 +780,23 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-red-50 rounded-3xl p-6 mb-4">
                 <XCircle className="size-16 text-red-500" />
               </div>
-              <h2 className="text-[22px] font-semibold text-red-500 mb-1">Not Approved</h2>
+              <h2 className="text-[22px] font-semibold text-red-500 mb-1">{t(language, 'notApproved')}</h2>
               <p className="text-gray-500 text-[14px] text-center mb-6 px-4">
-                Your submission could not be verified. Please review the reason below and try again.
+                {t(language, 'rejectedDesc')}
               </p>
 
               {rejectionReason ? (
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
-                  <p className="text-[13px] font-semibold text-red-600 mb-1">Reason:</p>
+                  <p className="text-[13px] font-semibold text-red-600 mb-1">{t(language, 'reason')}</p>
                   <p className="text-[13px] text-gray-700">{rejectionReason}</p>
                 </div>
               ) : (
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
-                  <p className="text-[13px] font-semibold text-red-600 mb-2">Possible reasons:</p>
+                  <p className="text-[13px] font-semibold text-red-600 mb-2">{t(language, 'possibleReasons')}</p>
                   <ul className="text-[12px] text-gray-600 space-y-1.5">
-                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Photos are too similar</li>
-                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Area doesn't show significant cleaning</li>
-                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>Photos are unclear or poorly lit</li>
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>{t(language, 'rejectedReason1')}</li>
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>{t(language, 'rejectedReason2')}</li>
+                    <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5">-</span>{t(language, 'rejectedReason3')}</li>
                   </ul>
                 </div>
               )}
@@ -806,13 +806,13 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   onClick={resetFlow}
                   className="flex-1 bg-[#14ae5c] text-white py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-1"
                 >
-                  <RotateCcw className="size-4" /> Try Again
+                  <RotateCcw className="size-4" /> {t(language, 'tryAgain')}
                 </button>
                 <button
                   onClick={() => navigate('/activities')}
                   className="flex-1 border-2 border-gray-200 text-gray-500 py-3.5 rounded-2xl text-[14px] font-semibold active:scale-[0.98] transition-transform"
                 >
-                  Cancel
+                  {t(language, 'cancel')}
                 </button>
               </div>
             </div>
