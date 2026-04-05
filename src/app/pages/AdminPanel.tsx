@@ -617,7 +617,7 @@ function UsersTab() {
 
   const filtered = users.filter(u =>
     !search ||
-    u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.display_name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase()) ||
     u.neighborhood_name?.toLowerCase().includes(search.toLowerCase())
   );
@@ -647,13 +647,13 @@ function UsersTab() {
               {/* Avatar */}
               <div className="size-10 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
                 <span className="text-[16px] font-bold text-gray-400">
-                  {(u.full_name || u.email || '?').charAt(0).toUpperCase()}
+                  {(u.display_name || u.email || '?').charAt(0).toUpperCase()}
                 </span>
               </div>
 
               {/* Info */}
               <div className="min-w-0 flex-1">
-                <p className="text-white text-[13px] font-semibold truncate">{u.full_name || '—'}</p>
+                <p className="text-white text-[13px] font-semibold truncate">{u.display_name || '—'}</p>
                 <div className="flex items-center gap-1 text-gray-500">
                   <Mail className="size-3 shrink-0" />
                   <p className="text-[11px] truncate">{u.email}</p>
