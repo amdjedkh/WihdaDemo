@@ -118,7 +118,7 @@ export default function Login() {
 
   return (
     <MobileContainer>
-      <div className="flex flex-col size-full bg-white dark:bg-gray-900">
+      <div className="size-full overflow-y-auto bg-white dark:bg-gray-900">
         {/* Top gradient area */}
         <div className="bg-gradient-to-b from-[#f0faf4] to-white dark:from-gray-800 dark:to-gray-900 pt-16 pb-8 px-8 flex flex-col items-center relative">
           <button
@@ -133,7 +133,7 @@ export default function Login() {
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto px-6 pt-4">
+        <div className="px-6 pt-4">
           <h2 className="text-[24px] font-bold text-gray-900 dark:text-white mb-1 font-[Poppins,sans-serif]">{t(language, 'welcomeBack')}</h2>
           <p className="text-[14px] text-gray-400 mb-8">{t(language, 'signInToAccount')}</p>
 
