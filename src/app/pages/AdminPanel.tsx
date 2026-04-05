@@ -6,8 +6,29 @@ import {
   LayoutDashboard, Zap, LogOut, Plus, Trash2, Pencil,
   Users, ClipboardList, CheckCircle, XCircle, Coins,
   X, Loader2, RefreshCw, Mail, MapPin, Calendar,
-  AlertTriangle, CheckCircle2, Building2,
+  AlertTriangle, CheckCircle2, Building2, Sparkles, Globe,
+  ChevronDown, Minus,
 } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const PALETTE = ['#14ae5c', '#52ADE5', '#f0a326', '#e74c3c', '#8e44ad', '#1abc9c', '#e67e22', '#2980b9'];
+const DEFAULT_LAT = 36.7538;
+const DEFAULT_LNG = 3.0588;
+
+function distMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  return Math.sqrt(
+    Math.pow((lat1 - lat2) * 111000, 2) +
+    Math.pow((lng1 - lng2) * 111000 * Math.cos((lat1 * Math.PI) / 180), 2),
+  );
+}
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 
@@ -62,7 +83,7 @@ interface ScrapeJobResult {
   error?: string;
 }
 
-function DashboardTab() {
+function DashboardTab({ onGenerateAI }: { onGenerateAI: () => void }) {
   const [stats, setStats]     = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [scrapeJob, setScrapeJob] = useState<ScrapeJobResult | null>(null);
@@ -211,6 +232,250 @@ function DashboardTab() {
                 )}
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* AI Generator */}
+      <div className="bg-gray-900 rounded-2xl p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white text-[13px] font-semibold">AI Activity Generator</p>
+            <p className="text-gray-500 text-[11px] mt-0.5">Describe an activity → AI creates it</p>
+          </div>
+          <button
+            onClick={onGenerateAI}
+            className="flex items-center gap-1.5 bg-purple-700 text-white px-3 py-2 rounded-xl text-[12px] font-medium active:scale-[0.98] transition-all shrink-0"
+          >
+            <Sparkles className="size-3.5" /> Generate
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AI Generator Page ────────────────────────────────────────────────────────
+
+function AIGeneratorPage({ onClose }: { onClose: () => void }) {
+  const [prompt, setPrompt]           = useState('');
+  const [generating, setGenerating]   = useState(false);
+  const [generated, setGenerated]     = useState<any>(null);
+  const [publishing, setPublishing]   = useState(false);
+  const [neighborhoods, setNeighborhoods] = useState<{ id: string; name: string }[]>([]);
+  const [selectedNHs, setSelectedNHs] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiFetch('/v1/admin/neighborhoods')
+      .then(d => { if (d.success) setNeighborhoods(d.data); })
+      .catch(() => {});
+  }, []);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setGenerating(true);
+    setGenerated(null);
+    try {
+      const data = await apiFetch('/v1/admin/campaigns/generate', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+      if (data.success) {
+        const ev = data.data;
+        setGenerated({
+          title:          ev.title          || '',
+          subtitle:       ev.subtitle       || '',
+          description:    ev.description    || '',
+          organizer:      ev.organizer      || '',
+          organizer_logo: ev.organizer_logo || '',
+          location:       ev.location       || '',
+          start_dt:       ev.start_dt       ? ev.start_dt.slice(0, 16) : '',
+          end_dt:         ev.end_dt         ? ev.end_dt.slice(0, 16)   : '',
+          url:            ev.url            || '',
+          image1:         (ev.images?.[0])  || ev.image_url || '',
+          image2:         (ev.images?.[1])  || '',
+          image3:         (ev.images?.[2])  || '',
+          contact_phone:  ev.contact_phone  || '',
+          contact_email:  ev.contact_email  || '',
+          coin_reward:    String(ev.coin_reward ?? 50),
+        });
+      } else {
+        alert('Generation failed. Try again.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!generated) return;
+    setPublishing(true);
+    try {
+      const images = [generated.image1, generated.image2, generated.image3].filter(Boolean);
+      await apiFetch('/v1/admin/campaigns', {
+        method: 'POST',
+        body: JSON.stringify({
+          title:          generated.title,
+          subtitle:       generated.subtitle      || null,
+          description:    generated.description   || null,
+          organizer:      generated.organizer      || null,
+          organizer_logo: generated.organizer_logo || null,
+          location:       generated.location       || null,
+          start_dt:       generated.start_dt,
+          end_dt:         generated.end_dt         || null,
+          url:            generated.url            || null,
+          images:         images.length > 0 ? images : undefined,
+          contact_phone:  generated.contact_phone  || null,
+          contact_email:  generated.contact_email  || null,
+          coin_reward:    parseInt(generated.coin_reward) || 50,
+          neighborhood_ids: selectedNHs.length > 0 ? selectedNHs : undefined,
+        }),
+      });
+      alert('Activity published!');
+      onClose();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to publish');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const f = (key: string, label: string, type = 'text') => (
+    <div>
+      <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">{label}</label>
+      <input
+        type={type}
+        value={generated?.[key] ?? ''}
+        onChange={e => setGenerated((g: any) => ({ ...g, [key]: e.target.value }))}
+        className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-[14px] placeholder:text-gray-600 focus:border-purple-500 focus:outline-none transition-colors"
+      />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-gray-950 z-50 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-[env(safe-area-inset-top)] h-14 mt-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="size-5 text-purple-400" />
+          <h2 className="text-white text-[17px] font-bold">AI Generator</h2>
+        </div>
+        <button onClick={onClose} className="text-gray-400 active:text-white">
+          <X className="size-6" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 space-y-4 pb-8 pt-2">
+
+        {/* Prompt */}
+        <div>
+          <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-2 block">
+            Describe the activity you want to create
+          </label>
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="e.g. A tree planting event in Algiers for youth scouts, weekend morning, organized by local municipality…"
+            rows={4}
+            className="w-full bg-gray-900 border border-gray-700 text-white rounded-2xl px-4 py-3 text-[14px] placeholder:text-gray-600 focus:border-purple-500 focus:outline-none transition-colors resize-none"
+          />
+        </div>
+
+        <button
+          onClick={handleGenerate}
+          disabled={generating || !prompt.trim()}
+          className="w-full bg-purple-700 text-white py-4 rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
+        >
+          {generating ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              Generating… (this may take ~20s)
+            </>
+          ) : (
+            <>
+              <Sparkles className="size-5" />
+              Generate Activity
+            </>
+          )}
+        </button>
+
+        {/* Preview/Edit form */}
+        {generated && (
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2 border-t border-gray-800 pt-4">
+              <CheckCircle2 className="size-4 text-purple-400" />
+              <p className="text-purple-300 text-[13px] font-semibold">Review & Edit Before Publishing</p>
+            </div>
+
+            {/* Image previews */}
+            {[generated.image1, generated.image2, generated.image3].some(Boolean) && (
+              <div className="flex gap-2 overflow-x-auto">
+                {[generated.image1, generated.image2, generated.image3].filter(Boolean).map((url: string, i: number) => (
+                  <img key={i} src={url} alt="" className="size-20 rounded-xl object-cover shrink-0 border border-gray-700" />
+                ))}
+              </div>
+            )}
+
+            {f('title',          'Title')}
+            {f('subtitle',       'Subtitle')}
+            <div>
+              <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">Description</label>
+              <textarea
+                value={generated.description}
+                onChange={e => setGenerated((g: any) => ({ ...g, description: e.target.value }))}
+                rows={3}
+                className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-[14px] placeholder:text-gray-600 focus:border-purple-500 focus:outline-none transition-colors resize-none"
+              />
+            </div>
+            {f('organizer',      'Organizer')}
+            {f('location',       'Location')}
+            {f('start_dt',       'Start Date & Time', 'datetime-local')}
+            {f('end_dt',         'End Date & Time',   'datetime-local')}
+            <div className="space-y-2">
+              <label className="text-gray-400 text-[11px] uppercase tracking-wider block">Images (up to 3 URLs)</label>
+              {f('image1', 'Image 1 URL')}
+              {f('image2', 'Image 2 URL')}
+              {f('image3', 'Image 3 URL')}
+            </div>
+            {f('contact_email', 'Contact Email', 'email')}
+            {f('coin_reward',   'Coin Reward',   'number')}
+
+            {/* Neighborhood targeting */}
+            {neighborhoods.length > 0 && (
+              <div>
+                <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-2 block">
+                  Target Neighborhoods <span className="text-gray-600 normal-case">(none = all)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {neighborhoods.map(n => {
+                    const sel = selectedNHs.includes(n.id);
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => setSelectedNHs(prev => sel ? prev.filter(x => x !== n.id) : [...prev, n.id])}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border ${
+                          sel ? 'bg-purple-600 text-white border-purple-600' : 'bg-gray-800 text-gray-400 border-gray-700'
+                        }`}
+                      >
+                        <Building2 className="size-3" />
+                        {n.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handlePublish}
+              disabled={publishing || !generated.title || !generated.start_dt}
+              className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
+            >
+              {publishing ? <Loader2 className="size-5 animate-spin" /> : <><CheckCircle2 className="size-5" /> Publish Activity</>}
+            </button>
           </div>
         )}
       </div>
@@ -688,14 +953,393 @@ function UsersTab() {
   );
 }
 
+// ─── Neighborhoods tab ────────────────────────────────────────────────────────
+
+interface AdminNeighborhood {
+  id: string; name: string; description: string | null; color: string;
+  city: string; country: string; center_lat: number; center_lng: number;
+  radius_meters: number; member_count: number;
+}
+
+const NH_EMPTY = {
+  name: '', description: '', color: '#14ae5c', city: '', country: 'DZ',
+  center_lat: DEFAULT_LAT, center_lng: DEFAULT_LNG, radius_meters: 500,
+};
+
+function NeighborhoodsTab() {
+  const [hoods, setHoods]     = useState<AdminNeighborhood[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showMap, setShowMap] = useState(false);
+  const [editTarget, setEditTarget] = useState<AdminNeighborhood | null>(null);
+  const [deleteId, setDeleteId]     = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await apiFetch('/v1/admin/neighborhoods');
+      if (d.success) setHoods(d.data);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await apiFetch(`/v1/admin/neighborhoods/${id}`, { method: 'DELETE' });
+      setHoods(prev => prev.filter(n => n.id !== id));
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete');
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  const openCreate = () => { setEditTarget(null); setShowMap(true); };
+  const openEdit   = (n: AdminNeighborhood) => { setEditTarget(n); setShowMap(true); };
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        <p className="text-gray-400 text-[13px]">{hoods.length} neighborhoods</p>
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-1.5 bg-[#14ae5c] text-white px-4 py-2 rounded-xl text-[13px] font-semibold active:scale-[0.98] transition-all"
+        >
+          <Plus className="size-4" /> Add
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="size-7 text-[#14ae5c] animate-spin" />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-4 space-y-2 pb-6">
+          {hoods.map(n => (
+            <div key={n.id} className="bg-gray-900 rounded-2xl p-3.5 flex items-center gap-3">
+              <div className="size-10 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: (n.color || '#14ae5c') + '33' }}>
+                <Globe className="size-5" style={{ color: n.color || '#14ae5c' }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-[13px] font-semibold truncate">{n.name}</p>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <MapPin className="size-3" />
+                    <p className="text-[11px]">{n.city}</p>
+                  </div>
+                  <p className="text-[11px] text-gray-600">r={Math.round(n.radius_meters)}m</p>
+                  <p className="text-[11px] text-gray-500">{n.member_count} members</p>
+                </div>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <button onClick={() => openEdit(n)} className="p-2 rounded-xl bg-gray-800 text-blue-400 active:scale-95 transition-all">
+                  <Pencil className="size-3.5" />
+                </button>
+                <button onClick={() => setDeleteId(n.id)} className="p-2 rounded-xl bg-gray-800 text-red-400 active:scale-95 transition-all">
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {hoods.length === 0 && <div className="text-center pt-16 text-gray-600 text-[14px]">No neighborhoods yet</div>}
+        </div>
+      )}
+
+      {/* Map overlay for create/edit */}
+      {showMap && (
+        <NeighborhoodMapOverlay
+          initial={editTarget ?? undefined}
+          onClose={() => setShowMap(false)}
+          onSaved={() => { setShowMap(false); load(); }}
+        />
+      )}
+
+      {/* Delete confirm */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setDeleteId(null)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative w-full bg-gray-900 rounded-t-3xl px-6 pt-5 pb-[calc(env(safe-area-inset-bottom)+24px)] space-y-3" onClick={e => e.stopPropagation()}>
+            <p className="text-white text-[16px] font-bold text-center">Delete Neighborhood?</p>
+            <p className="text-gray-500 text-[13px] text-center">Members will no longer see it. This cannot be undone easily.</p>
+            <button onClick={() => handleDelete(deleteId)} className="w-full bg-red-500 text-white py-3.5 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-all">Delete</button>
+            <button onClick={() => setDeleteId(null)} className="w-full bg-gray-800 text-gray-300 py-3.5 rounded-2xl text-[15px] font-medium active:scale-[0.98] transition-all">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Neighborhood map overlay ─────────────────────────────────────────────────
+
+function NeighborhoodMapOverlay({
+  initial,
+  onClose,
+  onSaved,
+}: {
+  initial?: AdminNeighborhood;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const mapContainerRef      = useRef<HTMLDivElement>(null);
+  const mapRef               = useRef<L.Map | null>(null);
+  const nhLayersRef          = useRef<L.Circle[]>([]);
+  const previewMarkerRef     = useRef<L.CircleMarker | null>(null);
+  const previewCircleRef     = useRef<L.Circle | null>(null);
+
+  const [form, setForm]      = useState({
+    name:        initial?.name        ?? '',
+    description: initial?.description ?? '',
+    color:       initial?.color       ?? '#14ae5c',
+    city:        initial?.city        ?? '',
+    country:     initial?.country     ?? 'DZ',
+  });
+  const [drawCenter, setDrawCenter] = useState<{ lat: number; lng: number } | null>(
+    initial ? { lat: initial.center_lat, lng: initial.center_lng } : null,
+  );
+  const [drawRadius, setDrawRadius] = useState(initial?.radius_meters ?? 500);
+  const [showDetails, setShowDetails] = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [allHoods, setAllHoods]       = useState<AdminNeighborhood[]>([]);
+
+  // Load all neighborhoods to display on map
+  useEffect(() => {
+    apiFetch('/v1/admin/neighborhoods')
+      .then(d => { if (d.success) setAllHoods(d.data); })
+      .catch(() => {});
+  }, []);
+
+  // Init map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+    const startLat = drawCenter?.lat ?? DEFAULT_LAT;
+    const startLng = drawCenter?.lng ?? DEFAULT_LNG;
+
+    const map = L.map(mapContainerRef.current, {
+      center: [startLat, startLng],
+      zoom: 13,
+      zoomControl: false,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    mapRef.current = map;
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      setDrawCenter({ lat: e.latlng.lat, lng: e.latlng.lng });
+      setShowDetails(true);
+    });
+
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // Draw existing neighborhoods
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    nhLayersRef.current.forEach(l => l.remove());
+    nhLayersRef.current = [];
+    allHoods.forEach(n => {
+      if (initial && n.id === initial.id) return; // skip the one being edited
+      const c = L.circle([n.center_lat, n.center_lng], {
+        radius: n.radius_meters,
+        color: n.color || '#14ae5c',
+        fillColor: n.color || '#14ae5c',
+        fillOpacity: 0.08,
+        weight: 1.5,
+        dashArray: '8 5',
+      }).addTo(map);
+      c.bindTooltip(n.name, { permanent: n.radius_meters > 300, direction: 'center', className: 'leaflet-neighborhood-label' });
+      nhLayersRef.current.push(c);
+    });
+  }, [allHoods, initial]);
+
+  // Draw preview circle
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    previewMarkerRef.current?.remove(); previewMarkerRef.current = null;
+    previewCircleRef.current?.remove(); previewCircleRef.current = null;
+    if (drawCenter) {
+      const m = L.circleMarker([drawCenter.lat, drawCenter.lng], {
+        radius: 8, color: '#fff', fillColor: form.color, fillOpacity: 1, weight: 2.5,
+      }).addTo(map);
+      const circle = L.circle([drawCenter.lat, drawCenter.lng], {
+        radius: drawRadius, color: form.color, fillColor: form.color, fillOpacity: 0.15, weight: 2,
+      }).addTo(map);
+      if (form.name) circle.bindTooltip(form.name, { permanent: true, direction: 'center', className: 'leaflet-neighborhood-label' });
+      previewMarkerRef.current = m;
+      previewCircleRef.current = circle;
+    }
+  }, [drawCenter, drawRadius, form.color, form.name]);
+
+  const handleSave = async () => {
+    if (!drawCenter || !form.name.trim() || !form.city.trim()) {
+      alert('Please tap the map and fill in name + city');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        name:          form.name.trim(),
+        description:   form.description.trim() || undefined,
+        color:         form.color,
+        center_lat:    drawCenter.lat,
+        center_lng:    drawCenter.lng,
+        radius_meters: drawRadius,
+        city:          form.city.trim(),
+        country:       form.country || 'DZ',
+      };
+      if (initial) {
+        await apiFetch(`/v1/admin/neighborhoods/${initial.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiFetch('/v1/admin/neighborhoods', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      }
+      onSaved();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-950 z-50 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-[env(safe-area-inset-top)] h-14 mt-2 shrink-0">
+        <h2 className="text-white text-[17px] font-bold">{initial ? 'Edit Neighborhood' : 'New Neighborhood'}</h2>
+        <button onClick={onClose} className="text-gray-400 active:text-white">
+          <X className="size-6" />
+        </button>
+      </div>
+
+      {/* Map */}
+      <div className="flex-1 relative min-h-0">
+        <div ref={mapContainerRef} className="absolute inset-0" />
+        {!drawCenter && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
+            <div className="bg-black/70 text-white text-[13px] px-4 py-2 rounded-full">
+              Tap on the map to place center
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom panel */}
+      <div className="shrink-0 bg-gray-900 border-t border-gray-800 px-5 pt-4 pb-6 max-h-[55%] overflow-y-auto">
+        {!drawCenter ? (
+          <div className="bg-blue-950/50 border border-blue-800/40 rounded-xl p-3 mb-3">
+            <p className="text-[13px] text-blue-300 font-medium">Tap on the map above</p>
+            <p className="text-[12px] text-blue-400/70 mt-0.5">Tap anywhere to place the neighborhood's center point.</p>
+          </div>
+        ) : (
+          <>
+            {/* Radius */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[13px] font-semibold text-white">Radius</span>
+                <span className="text-[13px] font-semibold text-[#14ae5c]">
+                  {drawRadius >= 1000 ? `${(drawRadius / 1000).toFixed(1)} km` : `${drawRadius} m`}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setDrawRadius(r => Math.max(100, r - 100))} className="size-8 rounded-full bg-gray-800 flex items-center justify-center active:bg-gray-700">
+                  <Minus className="size-4 text-gray-400" />
+                </button>
+                <input
+                  type="range" min={100} max={5000} step={100}
+                  value={drawRadius}
+                  onChange={e => setDrawRadius(parseInt(e.target.value))}
+                  className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                  style={{ background: `linear-gradient(to right, ${form.color} ${((drawRadius - 100) / 4900) * 100}%, #374151 ${((drawRadius - 100) / 4900) * 100}%)` }}
+                />
+                <button onClick={() => setDrawRadius(r => Math.min(5000, r + 100))} className="size-8 rounded-full bg-gray-800 flex items-center justify-center active:bg-gray-700">
+                  <Plus className="size-4 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Details toggle */}
+            <button
+              onClick={() => setShowDetails(v => !v)}
+              className="w-full flex items-center justify-between bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 mb-3"
+            >
+              <span className="text-[13px] font-semibold text-white">Neighborhood Details</span>
+              <ChevronDown className={`size-4 text-gray-500 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showDetails && (
+              <div className="space-y-3 mb-4">
+                <div>
+                  <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">Name *</label>
+                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder="e.g. Hadjam Moukhtar"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-[14px] focus:border-[#14ae5c] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">City *</label>
+                  <input type="text" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="e.g. Alger"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-[14px] focus:border-[#14ae5c] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-1 block">Description</label>
+                  <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                    placeholder="Optional description" rows={2}
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-[14px] focus:border-[#14ae5c] focus:outline-none resize-none" />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-[11px] uppercase tracking-wider mb-2 block">Color</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {PALETTE.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, color: c }))}
+                        className="size-8 rounded-full border-2 transition-all active:scale-90"
+                        style={{ backgroundColor: c, borderColor: form.color === c ? '#fff' : 'transparent' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={handleSave}
+              disabled={saving || !form.name.trim() || !form.city.trim()}
+              className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-all"
+            >
+              {saving ? <Loader2 className="size-5 animate-spin" /> : initial ? 'Save Changes' : 'Create Neighborhood'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
-type Tab = 'dashboard' | 'activities' | 'users';
+type Tab = 'dashboard' | 'activities' | 'users' | 'neighborhoods';
 
 export default function AdminPanel() {
   useAdminGuard();
   const navigate  = useNavigate();
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab]           = useState<Tab>('dashboard');
+  const [showAIGen, setShowAIGen] = useState(false);
 
   const handleLogout = () => {
     clearTokens();
@@ -726,14 +1370,15 @@ export default function AdminPanel() {
         {/* Tab bar */}
         <div className="flex bg-gray-900 mx-4 rounded-2xl p-1 mt-1 mb-3 shrink-0">
           {([
-            { key: 'dashboard',  label: 'Dashboard',   icon: <LayoutDashboard className="size-4" /> },
-            { key: 'activities', label: 'Activities',  icon: <Zap className="size-4" /> },
-            { key: 'users',      label: 'Users',       icon: <Users className="size-4" /> },
+            { key: 'dashboard',     label: 'Home',    icon: <LayoutDashboard className="size-3.5" /> },
+            { key: 'activities',    label: 'Events',  icon: <Zap className="size-3.5" /> },
+            { key: 'neighborhoods', label: 'Areas',   icon: <Globe className="size-3.5" /> },
+            { key: 'users',         label: 'Users',   icon: <Users className="size-3.5" /> },
           ] as { key: Tab; label: string; icon: React.ReactNode }[]).map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[12px] font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${
                 tab === t.key ? 'bg-[#14ae5c] text-white shadow' : 'text-gray-500'
               }`}
             >
@@ -744,9 +1389,13 @@ export default function AdminPanel() {
         </div>
 
         {/* Content */}
-        {tab === 'dashboard'  && <DashboardTab />}
-        {tab === 'activities' && <ActivitiesTab />}
-        {tab === 'users'      && <UsersTab />}
+        {tab === 'dashboard'     && <DashboardTab onGenerateAI={() => setShowAIGen(true)} />}
+        {tab === 'activities'    && <ActivitiesTab />}
+        {tab === 'neighborhoods' && <NeighborhoodsTab />}
+        {tab === 'users'         && <UsersTab />}
+
+        {/* AI Generator overlay */}
+        {showAIGen && <AIGeneratorPage onClose={() => setShowAIGen(false)} />}
 
         {/* Bottom safe area */}
         <div className="pb-[env(safe-area-inset-bottom)] shrink-0" />
