@@ -788,7 +788,7 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               {rejectionReason ? (
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
                   <p className="text-[13px] font-semibold text-red-600 mb-1">{t(language, 'reason')}</p>
-                  <p className="text-[13px] text-gray-700">{rejectionReason}</p>
+                  <p className="text-[13px] text-gray-700 dark:text-gray-300">{rejectionReason}</p>
                 </div>
               ) : (
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-4 w-full mb-6">
