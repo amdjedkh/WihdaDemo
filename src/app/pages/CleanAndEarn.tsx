@@ -140,8 +140,8 @@ export default function CleanAndEarn() {
         LocalNotifications.schedule({
           notifications: [{
             id: 1001,
-            title: 'Clean & Earn in progress 🧹',
-            body: 'Don\'t forget to take your after photo and earn coins!',
+            title: language === 'ar' ? 'نظّف واكسب جارٍ 🧹' : 'Clean & Earn in progress 🧹',
+            body: language === 'ar' ? 'لا تنسَ التقاط صورة بعد التنظيف لكسب العملات!' : "Don't forget to take your after photo and earn coins!",
             schedule: { at: new Date(Date.now() + 25 * 60 * 1000) },
             extra: { submissionId: data.data.submission_id },
           }],
@@ -249,6 +249,7 @@ export default function CleanAndEarn() {
       // 3. Confirm — this queues AI review
       await apiFetch(`/v1/cleanify/${submissionId}/after/confirm`, {
         method: 'POST',
+        headers: { 'X-Language': language },
         body: JSON.stringify({ file_key }),
       });
 
@@ -300,7 +301,7 @@ export default function CleanAndEarn() {
           setCoinsEarned(coins);
           localStorage.setItem('cleanify_result', JSON.stringify({ savedStep: 'approved', savedCoins: coins }));
           LocalNotifications.cancel({ notifications: [{ id: 1002 }] }).catch(() => {});
-          LocalNotifications.schedule({ notifications: [{ id: 1003, title: 'Submission Approved! 🎉', body: `You earned ${coins} coins! Great work!`, schedule: { at: new Date(Date.now() + 500) } }] }).catch(() => {});
+          LocalNotifications.schedule({ notifications: [{ id: 1003, title: language === 'ar' ? 'تمت الموافقة على التقديم! 🎉' : 'Submission Approved! 🎉', body: language === 'ar' ? `لقد حصلت على ${coins} عملة! عمل رائع!` : `You earned ${coins} coins! Great work!`, schedule: { at: new Date(Date.now() + 500) } }] }).catch(() => {});
           setStep('approved');
           setTimeout(() => refreshProfile(), 1500);
           toast('Approved!', { description: `You earned ${coins} coins!` });
@@ -409,30 +410,30 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   <div className="bg-blue-50 rounded-3xl p-6 mb-5">
                     <Loader2 className="size-14 text-blue-400 animate-spin" />
                   </div>
-                  <h2 className="text-[21px] font-semibold text-gray-900 mb-2 text-center">Under Review</h2>
+                  <h2 className="text-[21px] font-semibold text-gray-900 mb-2 text-center">{t(language, 'underReview')}</h2>
                   <p className="text-gray-500 text-[14px] text-center mb-8 px-4">
-                    Your previous submission is still under review. Please wait for the result before starting a new one.
+                    {t(language, 'pendingReviewDesc')}
                   </p>
                   <div className="w-full bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-8">
                     <div className="flex items-center gap-2">
                       <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
                       <p className="text-[13px] font-semibold text-blue-700">
-                        AI is reviewing your photos
+                        {t(language, 'aiReviewingPhotos')}
                       </p>
                     </div>
-                    <p className="text-[12px] text-gray-400 mt-1 pl-4">You'll receive a notification when done</p>
+                    <p className="text-[12px] text-gray-400 mt-1 pl-4">{t(language, 'notifWhenDone')}</p>
                   </div>
                   <button
                     onClick={() => navigate(`/cleanify-result/${activeSubmission.id}`)}
                     className="w-full bg-blue-500 text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mb-3"
                   >
-                    <ArrowRight className="size-5" /> View Submission Status
+                    <ArrowRight className="size-5" /> {t(language, 'viewSubmissionStatus')}
                   </button>
                   <button
                     onClick={() => navigate('/activities')}
                     className="w-full text-gray-400 text-[14px] py-2 active:scale-[0.98] transition-transform"
                   >
-                    Back to Activities
+                    {t(language, 'backToActivities')}
                   </button>
                 </>
               ) : (
@@ -440,21 +441,21 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   <div className="bg-orange-50 rounded-3xl p-6 mb-5">
                     <Clock className="size-14 text-orange-400" />
                   </div>
-                  <h2 className="text-[21px] font-semibold text-gray-900 mb-2 text-center">Unfinished Session</h2>
+                  <h2 className="text-[21px] font-semibold text-gray-900 mb-2 text-center">{t(language, 'unfinishedSession')}</h2>
                   <p className="text-gray-500 text-[14px] text-center mb-8 px-4">
-                    You have a Clean & Earn session in progress. Would you like to continue where you left off?
+                    {t(language, 'unfinishedSessionDesc')}
                   </p>
 
                   <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-8">
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`size-2 rounded-full ${activeSubmission?.status === 'in_progress' ? 'bg-green-500' : 'bg-orange-400'}`} />
                       <p className="text-[13px] font-semibold text-gray-700">
-                        {activeSubmission?.status === 'in_progress' ? 'Before photo uploaded — waiting for after photo' : 'Before photo not yet uploaded'}
+                        {activeSubmission?.status === 'in_progress' ? t(language, 'beforePhotoStatus') : t(language, 'beforePhotoNotYet')}
                       </p>
                     </div>
                     {activeSubmission?.before_uploaded_at && (
                       <p className="text-[12px] text-gray-400 mt-1 pl-4">
-                        Started {new Date(activeSubmission.before_uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {t(language, 'startedAt')} {new Date(activeSubmission.before_uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
                   </div>
@@ -464,14 +465,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                       onClick={resumeActiveSubmission}
                       className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                     >
-                      <ArrowRight className="size-5" /> Continue Session
+                      <ArrowRight className="size-5" /> {t(language, 'continueSession')}
                     </button>
                     <button
                       onClick={abandonActiveSubmission}
                       disabled={loading}
                       className="w-full bg-red-500 text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      {loading ? <Loader2 className="size-5 animate-spin" /> : 'Abandon & Start New'}
+                      {loading ? <Loader2 className="size-5 animate-spin" /> : t(language, 'abandonAndNew')}
                     </button>
                   </div>
                 </>
@@ -498,10 +499,10 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
 
               <div className="w-full space-y-3 mb-8">
                 {[
-                  { icon: Camera, text: 'Take a "before" photo of the dirty area', step: '1' },
-                  { icon: Clock, text: 'Clean the area thoroughly', step: '2' },
-                  { icon: Upload, text: 'Take an "after" photo when done', step: '3' },
-                  { icon: Sparkles, text: 'Get coins after AI validation (up to 48h)', step: '4' },
+                  { icon: Camera, text: t(language, 'introStep1'), step: '1' },
+                  { icon: Clock, text: t(language, 'introStep2'), step: '2' },
+                  { icon: Upload, text: t(language, 'introStep3'), step: '3' },
+                  { icon: Sparkles, text: t(language, 'introStep4'), step: '4' },
                 ].map((item) => (
                   <div key={item.step} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3.5">
                     <div className="bg-[#14ae5c] text-white rounded-full size-8 flex items-center justify-center text-[12px] font-bold shrink-0">
@@ -515,14 +516,14 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               {!user ? (
                 <div className="w-full space-y-3">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center">
-                    <p className="text-[13px] text-yellow-800 font-medium">Sign in to participate</p>
-                    <p className="text-[12px] text-yellow-700 mt-0.5">You need an account to earn coins</p>
+                    <p className="text-[13px] text-yellow-800 font-medium">{t(language, 'signInToParticipate')}</p>
+                    <p className="text-[12px] text-yellow-700 mt-0.5">{t(language, 'signInRequired')}</p>
                   </div>
                   <button
                     onClick={() => navigate('/login')}
                     className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                   >
-                    Sign In <ArrowRight className="size-5" />
+                    {t(language, 'signIn')} <ArrowRight className="size-5" />
                   </button>
                 </div>
               ) : (
@@ -531,7 +532,7 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
                   disabled={loading}
                   className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  {loading ? <Loader2 className="size-5 animate-spin" /> : <>Let's Go <ArrowRight className="size-5" /></>}
+                  {loading ? <Loader2 className="size-5 animate-spin" /> : <>{t(language, 'letsGo')} <ArrowRight className="size-5" /></>}
                 </button>
               )}
             </div>
@@ -543,9 +544,9 @@ const stepNumber = (step === 'intro' || step === 'checking' || step === 'active-
               <div className="bg-orange-50 rounded-2xl p-4 mb-4">
                 <Camera className="size-8 text-orange-500" />
               </div>
-              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">Before Photo</h2>
+              <h2 className="text-[20px] font-semibold text-gray-900 mb-1">{t(language, 'beforePhoto')}</h2>
               <p className="text-gray-500 text-[13px] text-center mb-6">
-                Upload a photo of the unclean area to start
+                {t(language, 'beforePhotoDesc')}
               </p>
 
               <button

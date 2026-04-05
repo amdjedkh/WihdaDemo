@@ -6,6 +6,8 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import PageTransition from '../components/PageTransition';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch, apiUpload, API_BASE } from '../lib/api';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import { toast, Toaster } from 'sonner';
 import {
   ArrowLeft,
@@ -51,6 +53,7 @@ export default function Profile() {
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const isGuest = !user;
+  const { language } = useApp();
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +124,7 @@ export default function Profile() {
             <button onClick={() => navigate('/home')} className="text-gray-800">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">My Profile</h1>
+            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">{t(language, 'profileTitle')}</h1>
             {!isGuest ? (
               <button onClick={() => navigate('/settings')} className="text-gray-500" aria-label="Settings">
                 <Settings className="size-5" />
@@ -139,14 +142,14 @@ export default function Profile() {
           {/* Guest prompt */}
           {isGuest && (
             <div className="mx-5 md:mx-8 mb-4 bg-gradient-to-r from-[#14ae5c] to-emerald-600 rounded-2xl p-4">
-              <p className="text-white text-[15px] font-semibold mb-1">Join the community!</p>
-              <p className="text-white/70 text-[12px] mb-3">Create an account to share items, earn coins, and connect with neighbors.</p>
+              <p className="text-white text-[15px] font-semibold mb-1">{t(language, 'joinCommunityTitle')}</p>
+              <p className="text-white/70 text-[12px] mb-3">{t(language, 'joinCommunityDesc')}</p>
               <div className="flex gap-2">
                 <button onClick={() => navigate('/signup')} className="bg-white text-[#14ae5c] px-4 py-2 rounded-xl text-[13px] font-semibold active:scale-95 transition-transform">
-                  Sign Up
+                  {t(language, 'signUp')}
                 </button>
                 <button onClick={() => navigate('/login')} className="bg-white/20 text-white px-4 py-2 rounded-xl text-[13px] font-semibold active:scale-95 transition-transform">
-                  Sign In
+                  {t(language, 'signIn')}
                 </button>
               </div>
             </div>
@@ -179,7 +182,7 @@ export default function Profile() {
                       onClick={() => navigate('/verify-identity')}
                       className="flex items-center gap-1 text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full font-medium"
                     >
-                      <ShieldAlert className="size-3" /> Unverified
+                      <ShieldAlert className="size-3" /> {t(language, 'unverifiedLabel')}
                     </button>
                   )}
                 </div>
@@ -207,14 +210,14 @@ export default function Profile() {
                   onClick={() => navigate('/edit-profile')}
                   className="flex-1 bg-[#14ae5c] text-white py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                 >
-                  <Edit3 className="size-4" /> Edit Profile
+                  <Edit3 className="size-4" /> {t(language, 'editProfileBtn')}
                 </button>
                 {!profile?.neighborhood && (
                   <button
                     onClick={() => navigate('/choose-location')}
                     className="flex-1 border border-[#14ae5c] text-[#14ae5c] py-2.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                   >
-                    <MapPin className="size-4" /> Set Location
+                    <MapPin className="size-4" /> {t(language, 'setLocationBtn')}
                   </button>
                 )}
               </div>
@@ -224,9 +227,9 @@ export default function Profile() {
           {/* Stats */}
           <div className="px-5 md:px-8 mb-5">
             <div className="grid grid-cols-3 gap-3">
-              <StatCard icon={Flame}   label="Cleanify"  value={String(stats.cleanify_count)}  color="text-orange-500" bg="bg-orange-50" />
-              <StatCard icon={Package} label="Shared"    value={String(stats.shared_count)}    color="text-blue-500"   bg="bg-blue-50" />
-              <StatCard icon={Users}   label="Volunteer" value={String(stats.volunteer_count)} color="text-purple-500" bg="bg-purple-50" />
+              <StatCard icon={Flame}   label={t(language, 'statCleanify')}  value={String(stats.cleanify_count)}  color="text-orange-500" bg="bg-orange-50" />
+              <StatCard icon={Package} label={t(language, 'statShared')}    value={String(stats.shared_count)}    color="text-blue-500"   bg="bg-blue-50" />
+              <StatCard icon={Users}   label={t(language, 'statVolunteer')} value={String(stats.volunteer_count)} color="text-purple-500" bg="bg-purple-50" />
             </div>
           </div>
 
@@ -240,7 +243,7 @@ export default function Profile() {
                 <div className="bg-green-50 rounded-xl p-2 shrink-0">
                   <Leaf className="size-5 text-[#14ae5c]" />
                 </div>
-                <span className="flex-1 text-[14px] font-medium text-gray-800 text-left">Clean & Earn History</span>
+                <span className="flex-1 text-[14px] font-medium text-gray-800 text-left">{t(language, 'cleanHistory')}</span>
                 <ChevronRight className="size-4 text-gray-400 shrink-0" />
               </button>
             </div>
@@ -250,9 +253,9 @@ export default function Profile() {
           <div className="px-5 md:px-8 mb-5">
             <div className="bg-gradient-to-r from-[#f0a326] to-[#e8932a] rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-white/80 text-[12px] font-medium">Total Balance</p>
+                <p className="text-white/80 text-[12px] font-medium">{t(language, 'totalBalance')}</p>
                 <p className="text-white text-[28px] font-bold">{displayCoins}</p>
-                <p className="text-white/60 text-[11px]">coins available</p>
+                <p className="text-white/60 text-[11px]">{t(language, 'coinsAvailable')}</p>
               </div>
               <div className="bg-white/20 rounded-2xl p-3">
                 <Award className="size-8 text-white" />
@@ -263,7 +266,7 @@ export default function Profile() {
           {/* Badges */}
           <div className="px-5 md:px-8 mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[15px] font-semibold text-gray-800">Badges</h3>
+              <h3 className="text-[15px] font-semibold text-gray-800">{t(language, 'badgesLabel')}</h3>
               <button
                 onClick={() => navigate('/my-badges')}
                 className="flex items-center gap-1 text-[12px] text-[#14ae5c] font-medium"
@@ -294,7 +297,7 @@ export default function Profile() {
                   activeTab === 'activity' ? 'bg-white text-[#14ae5c] shadow-sm' : 'text-gray-500'
                 }`}
               >
-                Activity
+                {t(language, 'activityTab')}
               </button>
               <button
                 onClick={() => setActiveTab('coins')}
@@ -302,7 +305,7 @@ export default function Profile() {
                   activeTab === 'coins' ? 'bg-white text-[#14ae5c] shadow-sm' : 'text-gray-500'
                 }`}
               >
-                Coin History
+                {t(language, 'coinHistoryTab')}
               </button>
             </div>
 
@@ -311,7 +314,7 @@ export default function Profile() {
                 <div className="flex flex-col items-center py-8">
                   <Flame className="size-10 text-gray-300 mb-2" />
                   <p className="text-gray-400 text-[13px]">
-                    {isGuest ? 'Sign in to see your activity' : 'No activity yet — start sharing!'}
+                    {isGuest ? t(language, 'signInActivity') : t(language, 'noActivityYet')}
                   </p>
                   {!isGuest && (
                     <button

@@ -4,6 +4,8 @@ import MobileContainer from '../components/MobileContainer';
 import BottomNav from '../components/BottomNav';
 import PageTransition from '../components/PageTransition';
 import { apiFetch } from '../lib/api';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import {
   ArrowLeft, Bell, Search, Sparkles, ChevronRight,
   Heart, Users, Coins, ChevronLeft, Loader2, MapPin, Calendar,
@@ -116,6 +118,7 @@ function ActivityCard({ campaign, onToggleFavorite, favorites }: {
   favorites: Set<string>;
 }) {
   const navigate   = useNavigate();
+  const { language } = useApp();
   const isFav      = favorites.has(campaign.id);
   const dateStr    = new Date(campaign.event_date).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -178,7 +181,7 @@ function ActivityCard({ campaign, onToggleFavorite, favorites }: {
           <div className="flex items-center gap-1 mt-2">
             <Coins className="size-3 text-amber-400 shrink-0" />
             <p className="text-[11px] text-amber-500 font-medium">
-              +{campaign.coin_reward} coins after organizer confirms your attendance
+              +{campaign.coin_reward} {t(language, 'coinsAfterOrganizer')}
             </p>
           </div>
         )}
@@ -187,7 +190,7 @@ function ActivityCard({ campaign, onToggleFavorite, favorites }: {
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
           <div className="flex items-center gap-1 text-gray-400">
             <Users className="size-4" />
-            <span className="text-[12px]">{campaign.participant_count} joined</span>
+            <span className="text-[12px]">{campaign.participant_count} {t(language, 'participantJoined')}</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/activity/${campaign.id}`); }}
@@ -198,10 +201,10 @@ function ActivityCard({ campaign, onToggleFavorite, favorites }: {
             }`}
           >
             {campaign.is_joined
-              ? 'Joined ✓'
+              ? t(language, 'joinedBtn')
               : campaign.coin_reward > 0
-                ? `Join · +${campaign.coin_reward}`
-                : 'Join'}
+                ? `${t(language, 'joinBtn')} · +${campaign.coin_reward}`
+                : t(language, 'joinBtn')}
           </button>
         </div>
       </div>
@@ -213,6 +216,7 @@ function ActivityCard({ campaign, onToggleFavorite, favorites }: {
 
 export default function Activities() {
   const navigate  = useNavigate();
+  const { language } = useApp();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
@@ -263,7 +267,7 @@ export default function Activities() {
               <button onClick={() => navigate('/home')} className="text-gray-800">
                 <ArrowLeft className="size-6" />
               </button>
-              <h1 className="text-[18px] font-bold text-gray-900 font-[Poppins,sans-serif]">Activities</h1>
+              <h1 className="text-[18px] font-bold text-gray-900 font-[Poppins,sans-serif]">{t(language, 'activitiesTitle')}</h1>
               <button onClick={() => navigate('/notifications')} className="relative">
                 <Bell className="size-5 text-gray-800" />
                 <div className="absolute -top-0.5 -right-0.5 size-2 bg-red-500 rounded-full" />
@@ -275,7 +279,7 @@ export default function Activities() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search activities..."
+                placeholder={t(language, 'searchActivities')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-gray-50 rounded-xl pl-10 pr-4 py-2.5 text-[13px] placeholder:text-gray-400 border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors"
@@ -295,8 +299,8 @@ export default function Activities() {
                 <Sparkles className="size-5 text-yellow-300" />
               </div>
               <div className="flex-1">
-                <p className="text-white text-[14px] font-bold">Clean & Earn Coins</p>
-                <p className="text-white/70 text-[12px]">Up to 150 coins per verified cleanup</p>
+                <p className="text-white text-[14px] font-bold">{t(language, 'cleanEarnCoinsBtn')}</p>
+                <p className="text-white/70 text-[12px]">{t(language, 'upTo150Coins')}</p>
               </div>
               <ChevronRight className="size-5 text-white/60" />
             </button>
@@ -304,7 +308,7 @@ export default function Activities() {
             {loading ? (
               <div className="flex flex-col items-center py-16">
                 <Loader2 className="size-8 text-[#14ae5c] animate-spin mb-3" />
-                <p className="text-gray-400 text-[13px]">Loading activities...</p>
+                <p className="text-gray-400 text-[13px]">{t(language, 'loadingActivities')}</p>
               </div>
             ) : filtered.length > 0 ? (
               filtered.map(c => (
@@ -316,9 +320,9 @@ export default function Activities() {
                   <Sparkles className="size-8 text-gray-300" />
                 </div>
                 <p className="text-gray-500 text-[14px] font-medium">
-                  {search ? 'No activities found' : 'No activities yet'}
+                  {search ? t(language, 'noActivitiesFound') : t(language, 'noActivitiesYet')}
                 </p>
-                <p className="text-gray-400 text-[12px] mt-1">Check back soon!</p>
+                <p className="text-gray-400 text-[12px] mt-1">{t(language, 'checkBackSoon')}</p>
               </div>
             )}
           </div>

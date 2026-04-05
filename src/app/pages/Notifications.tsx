@@ -29,6 +29,20 @@ interface Notification {
   data?: Record<string, unknown>;
 }
 
+function localizeNotif(n: { type: string; title: string; body: string }, language: string): { title: string; body: string } {
+  if (language !== 'ar') return { title: n.title, body: n.body };
+  const ar: Record<string, { title: string; body?: string }> = {
+    cleanify_approved: { title: 'تمت الموافقة على التقديم! 🎉' },
+    cleanify_rejected: { title: 'لم تتم الموافقة على التقديم' },
+    leftover_request: { title: 'طلب جديد على عرضك!' },
+    match_closed: { title: 'اكتمل التبادل' },
+    new_message: { title: 'رسالة جديدة' },
+  };
+  const override = ar[n.type];
+  if (!override) return { title: n.title, body: n.body };
+  return { title: override.title, body: override.body ?? n.body };
+}
+
 const notifIcon = (type: string) => {
   if (type === 'new_message') return <MessageCircle className="size-5 text-blue-500" />;
   if (type === 'cleanify_approved') return <Sparkles className="size-5 text-[#14ae5c]" />;
@@ -181,7 +195,9 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {notifications.map((notif) => (
+              {notifications.map((notif) => {
+                const { title: localTitle, body: localBody } = localizeNotif(notif, language);
+                return (
                 <div
                   key={notif.id}
                   onClick={() => handleNotifTap(notif)}
@@ -193,17 +209,18 @@ export default function Notifications() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className={`text-[14px] font-semibold text-gray-800 ${!notif.read ? 'text-gray-900' : ''}`}>
-                        {notif.title}
+                        {localTitle}
                       </p>
                       {!notif.read && (
                         <div className="size-2 rounded-full bg-[#14ae5c] shrink-0 mt-1.5" />
                       )}
                     </div>
-                    <p className="text-[13px] text-gray-500 mt-0.5 leading-snug">{notif.body}</p>
+                    <p className="text-[13px] text-gray-500 mt-0.5 leading-snug">{localBody}</p>
                     <p className="text-[11px] text-gray-400 mt-1">{formatTime(notif.created_at)}</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

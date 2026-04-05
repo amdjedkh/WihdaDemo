@@ -4,6 +4,8 @@ import MobileContainer from '../components/MobileContainer';
 import BottomNav from '../components/BottomNav';
 import PageTransition from '../components/PageTransition';
 import { apiFetch } from '../lib/api';
+import { useApp } from '../context/AppContext';
+import { t } from '../lib/i18n';
 import { toast, Toaster } from 'sonner';
 import imgCats       from '../../assets/cats.png';
 import imgPlant      from '../../assets/plant.png';
@@ -32,7 +34,6 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-const storeCategories = ['All', 'Popular', 'New', 'Top'];
 
 interface StoreItem {
   id: string;
@@ -69,6 +70,13 @@ export default function Store() {
   const [flexyItem, setFlexyItem] = useState<StoreItem | null>(null);
   const [flexyForm, setFlexyForm] = useState<FlexyForm>({ full_name: '', phone_number: '' });
   const [flexySubmitting, setFlexySubmitting] = useState(false);
+  const { language } = useApp();
+  const storeCategories = [
+    { key: 'All', label: t(language, 'catAll') },
+    { key: 'Popular', label: t(language, 'catPopular') },
+    { key: 'New', label: t(language, 'catNew') },
+    { key: 'Top', label: t(language, 'catTop') },
+  ];
 
   const loadStore = async () => {
     try {
@@ -193,7 +201,7 @@ export default function Store() {
             <button onClick={() => navigate('/home')} className="text-gray-800">
               <ArrowLeft className="size-6" />
             </button>
-            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">Rewards Store</h1>
+            <h1 className="text-[18px] font-semibold text-gray-900 font-[Poppins,sans-serif]">{t(language, 'storeTitle')}</h1>
             <div className="flex items-center gap-1.5 bg-[#fff9e6] px-3 py-1.5 rounded-full">
               <div className="size-[16px] rounded-full border-[1.5px] border-[#f0a326] flex items-center justify-center">
                 <span className="text-[7px] font-bold text-[#f0a326]">$</span>
@@ -207,7 +215,7 @@ export default function Store() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search for rewards..."
+              placeholder={t(language, 'searchRewards')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-gray-50 rounded-xl pl-10 pr-4 py-2.5 text-[13px] placeholder:text-gray-400 border border-gray-100 focus:border-[#14ae5c] focus:outline-none transition-colors"
@@ -218,13 +226,13 @@ export default function Store() {
           <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
             {storeCategories.map((cat) => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                key={cat.key}
+                onClick={() => setActiveCategory(cat.key)}
                 className={`px-4 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap transition-all ${
-                  activeCategory === cat ? 'bg-[#14ae5c] text-white' : 'bg-gray-100 text-gray-500'
+                  activeCategory === cat.key ? 'bg-[#14ae5c] text-white' : 'bg-gray-100 text-gray-500'
                 }`}
               >
-                {cat}
+                {cat.label}
               </button>
             ))}
           </div>
@@ -239,9 +247,9 @@ export default function Store() {
           ) : filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <span className="text-[48px] mb-3">🏪</span>
-              <p className="text-[16px] font-semibold text-gray-700 mb-1">No items found</p>
+              <p className="text-[16px] font-semibold text-gray-700 mb-1">{t(language, 'noItemsFound')}</p>
               <p className="text-[13px] text-gray-400 text-center px-8">
-                {searchQuery ? 'Try a different search term' : 'Check back later for new rewards'}
+                {searchQuery ? t(language, 'tryDifferentSearch') : t(language, 'checkBackForRewards')}
               </p>
             </div>
           ) : (
@@ -257,7 +265,7 @@ export default function Store() {
                   >
                     {isComingSoon && (
                       <div className="absolute top-2 right-2 bg-gray-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-                        Soon
+                        {t(language, 'comingSoon')}
                       </div>
                     )}
 
@@ -293,7 +301,7 @@ export default function Store() {
                     {/* Claim Button */}
                     {isComingSoon ? (
                       <div className="w-full py-2 rounded-xl text-[12px] font-semibold bg-gray-200 text-gray-400 text-center">
-                        Coming Soon
+                        {t(language, 'comingSoon')}
                       </div>
                     ) : (
                       <button
@@ -309,16 +317,16 @@ export default function Store() {
                       >
                         {isRedeeming ? (
                           <span className="flex items-center justify-center gap-1">
-                            <Loader2 className="size-3 animate-spin" /> Redeeming...
+                            <Loader2 className="size-3 animate-spin" /> {t(language, 'redeemingBtn')}
                           </span>
                         ) : item.redeemed ? (
                           <span className="flex items-center justify-center gap-1">
-                            <Check className="size-3" /> Claimed
+                            <Check className="size-3" /> {t(language, 'claimedBtn')}
                           </span>
                         ) : item.can_afford ? (
-                          'Redeem'
+                          t(language, 'redeemBtn')
                         ) : (
-                          'Not enough coins'
+                          t(language, 'notEnoughCoins')
                         )}
                       </button>
                     )}
@@ -327,9 +335,9 @@ export default function Store() {
                     {item.redeemed && item.redemption?.delivery_status && (
                       <p className="text-[10px] text-gray-400 mt-1.5 text-center">
                         {item.redemption.delivery_status === 'pending'
-                          ? '⏳ Delivery pending (within 48h)'
+                          ? t(language, 'deliveryPending')
                           : item.redemption.delivery_status === 'delivered'
-                          ? '✅ Delivered'
+                          ? t(language, 'deliveredStatus')
                           : item.redemption.delivery_status}
                       </p>
                     )}
@@ -387,12 +395,12 @@ export default function Store() {
             </div>
 
             <p className="text-[13px] text-gray-500 mb-5">
-              Enter your details below. Your Flexy credit will be sent within <strong>48 hours</strong>.
+              {t(language, 'flexyFormDesc')}
             </p>
 
             {/* Full Name */}
             <div className="mb-4">
-              <label className="text-[12px] font-semibold text-gray-700 mb-1.5 block">Full Name *</label>
+              <label className="text-[12px] font-semibold text-gray-700 mb-1.5 block">{t(language, 'fullNameLabel')}</label>
               <div className="relative">
                 <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <input
@@ -408,7 +416,7 @@ export default function Store() {
 
             {/* Phone Number */}
             <div className="mb-6">
-              <label className="text-[12px] font-semibold text-gray-700 mb-1.5 block">Mobile Number *</label>
+              <label className="text-[12px] font-semibold text-gray-700 mb-1.5 block">{t(language, 'mobileNumberLabel')}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <input
@@ -429,9 +437,9 @@ export default function Store() {
               className="w-full bg-[#14ae5c] text-white py-4 rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.98] transition-transform"
             >
               {flexySubmitting ? (
-                <><Loader2 className="size-5 animate-spin" /> Processing...</>
+                <><Loader2 className="size-5 animate-spin" /> {t(language, 'processingBtn')}</>
               ) : (
-                <><Check className="size-5" /> Confirm Redemption</>
+                <><Check className="size-5" /> {t(language, 'confirmRedemption')}</>
               )}
             </button>
           </div>

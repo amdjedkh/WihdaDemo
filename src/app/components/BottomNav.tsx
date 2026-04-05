@@ -91,52 +91,54 @@ export default function BottomNav() {
 
       {/* Nav Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),var(--sab,0px))]">
-        <div className="flex items-center justify-around px-2 h-[64px] md:h-[72px] max-w-3xl mx-auto">
+        <div className="flex items-center h-[64px] md:h-[72px] max-w-3xl mx-auto">
           {navItems.map((item) => {
             if (item.path === '__fab__') {
               return (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    triggerHaptic();
-                    setSheetOpen(true);
-                  }}
-                  className="flex items-center justify-center bg-[#14ae5c] text-white rounded-full size-[52px] md:size-[60px] shadow-lg shadow-[#14ae5c]/30 active:scale-90 transition-all duration-150 animate-pulse-ring mt-[-22px]"
-                  aria-label="Add"
-                >
-                  <Plus className="size-6 md:size-7" strokeWidth={2.5} />
-                </button>
+                <div key={item.path} className="flex-1 flex justify-center">
+                  <button
+                    onClick={() => {
+                      triggerHaptic();
+                      setSheetOpen(true);
+                    }}
+                    className="flex items-center justify-center bg-[#14ae5c] text-white rounded-full size-[52px] md:size-[60px] shadow-lg shadow-[#14ae5c]/30 active:scale-90 transition-all duration-150 animate-pulse-ring mt-[-22px]"
+                    aria-label="Add"
+                  >
+                    <Plus className="size-6 md:size-7" strokeWidth={2.5} />
+                  </button>
+                </div>
               );
             }
 
             const active = isActive(item.path);
             return (
-              <button
-                key={item.path}
-                onClick={() => {
-                  if (!active) {
-                    triggerHaptic();
-                    navigate(item.path);
-                  }
-                }}
-                className={`flex flex-col items-center gap-0.5 px-3 md:px-5 py-1 rounded-xl transition-all duration-200 active:scale-90 ${
-                  active ? 'text-[#14ae5c]' : 'text-gray-400'
-                }`}
-                aria-label={item.label}
-              >
-                <div className="relative">
-                  <item.icon
-                    className={`size-[22px] md:size-[26px] transition-all duration-200 ${active ? 'scale-110' : ''}`}
-                    strokeWidth={active ? 2.2 : 1.8}
-                  />
-                  {active && (
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#14ae5c]" />
-                  )}
-                </div>
-                <span className={`text-[10px] md:text-[12px] transition-all duration-200 ${active ? 'font-semibold' : 'font-medium'}`}>
-                  {item.label}
-                </span>
-              </button>
+              <div key={item.path} className="flex-1 flex justify-center">
+                <button
+                  onClick={() => {
+                    if (!active) {
+                      triggerHaptic();
+                      navigate(item.path);
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200 active:scale-90 ${
+                    active ? 'text-[#14ae5c]' : 'text-gray-400'
+                  }`}
+                  aria-label={item.label}
+                >
+                  <div className="relative">
+                    <item.icon
+                      className={`size-[22px] md:size-[26px] transition-all duration-200 ${active ? 'scale-110' : ''}`}
+                      strokeWidth={active ? 2.2 : 1.8}
+                    />
+                    {active && (
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#14ae5c]" />
+                    )}
+                  </div>
+                  <span className={`text-[10px] md:text-[12px] transition-all duration-200 ${active ? 'font-semibold' : 'font-medium'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              </div>
             );
           })}
         </div>
