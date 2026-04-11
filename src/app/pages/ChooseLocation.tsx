@@ -13,7 +13,8 @@ import { toast, Toaster } from 'sonner';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
+mapboxgl.accessToken = (import.meta.env.VITE_MAPBOX_TOKEN as string) ||
+  'pk.eyJ1IjoiYW1kamVka2giLCJhIjoiY21udWV0MWY3MGZqbjJxcjFpa2o4ZTByciJ9.qmZhll4YSsgt7CFpH62tPg';
 
 const PALETTE = ['#14ae5c', '#52ADE5', '#f0a326', '#e74c3c', '#8e44ad', '#1abc9c', '#e67e22', '#2980b9'];
 const APP_GREEN = '#14ae5c';
