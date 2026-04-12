@@ -137,7 +137,7 @@ export default function Login() {
     } catch (err: any) {
       // User cancelled the sheet (error 1001) — don't show an error
       if (!(err?.message as string)?.includes('AuthorizationError error 1001')) {
-        setError('Apple sign-in failed. Please try again.');
+        setError(err?.message || 'Apple sign-in failed. Please try again.');
       }
     } finally {
       setAppleLoading(false);
