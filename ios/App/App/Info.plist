@@ -56,5 +56,13 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Wihda needs camera access to take photos for your profile and listings.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Wihda needs photo library access to upload photos for your profile and listings.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Wihda needs permission to save photos to your library.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Wihda needs microphone access for video recording.</string>
 </dict>
 </plist>
