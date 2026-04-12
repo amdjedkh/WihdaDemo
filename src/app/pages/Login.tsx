@@ -9,7 +9,6 @@ import { API_BASE, setTokens } from '../lib/api';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
-import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -107,6 +106,7 @@ export default function Login() {
 
     // iOS native: use the Capacitor plugin — shows the native Apple sheet
     try {
+      const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
       const result = await SignInWithApple.authorize({
         clientId: 'com.wihda.app',
         redirectURI: `${API_BASE}/v1/auth/apple/native`,

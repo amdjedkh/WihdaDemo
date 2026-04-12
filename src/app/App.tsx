@@ -30,9 +30,9 @@ export default function App() {
       }
     );
 
-    // Push notifications (FCM — only on native iOS/Android)
+    // Push notifications (FCM — only on iOS for now; Android requires Firebase setup)
     let pushListeners: Promise<{ remove: () => void }>[] = [];
-    if (Capacitor.isNativePlatform()) {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
       PushNotifications.requestPermissions().then((result) => {
         if (result.receive === 'granted') {
           PushNotifications.register();
