@@ -3,6 +3,8 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // Resolves figma:asset/HASH.png → src/assets/HASH.png
 // The Figma Make environment uses a custom "figma:asset/" URL scheme; outside
 // of Figma we redirect each import to the matching file in src/assets/.
@@ -17,13 +19,9 @@ const figmaAssetPlugin = {
 };
 
 export default defineConfig({
-  plugins: [
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
-    react(),
-    tailwindcss(),
-    figmaAssetPlugin,
-  ],
+  plugins: [// The React and Tailwind plugins are both required for Make, even if
+  // Tailwind is not being actively used – do not remove them
+  react(), tailwindcss(), figmaAssetPlugin, cloudflare()],
   resolve: {
     alias: {
       // Alias @ to the src directory
